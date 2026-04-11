@@ -29,7 +29,7 @@
   <div class="lock-title">잇데이 스튜디오</div>
   <div class="lock-sub">ITDASY STUDIO</div>
   <div style="margin:24px 0; text-align:center;">
-    <div style="font-size:18px; font-weight:800; color:var(--text); line-height:1.4; letter-spacing:-0.5px;">인스타 게시물 작성부터<br>사진 편집, 영상 편집까지</div>
+    <div style="font-size:18px; font-weight:800; color:var(--text); line-height:1.4; letter-spacing:-0.5px;">캡션 생성부터<br>사진 편집, 인스타 발행까지</div>
     <div style="margin-top:8px; font-size:15px; font-weight:700; color:var(--accent2);">핸드폰 하나로 끝.</div>
     <div style="margin-top:12px; font-size:12px; color:var(--text3); font-weight:500;">"사장님의 시간을 아껴, 매출을 잇습니다."</div>
   </div>
@@ -128,7 +128,6 @@
   <button class="nav-btn active" onclick="showTab('home',this)">홈</button>
   <button class="nav-btn" onclick="showTab('caption',this)">피드 글 작성</button>
   <button class="nav-btn" onclick="showTab('ba',this)">사진 편집</button>
-  <button class="nav-btn" onclick="showTab('video',this)">영상 편집</button>
 </div>
 
 <!-- ===== 홈 탭 ===== -->
@@ -218,7 +217,6 @@
     <div style="display:flex; flex-direction:column; gap:14px;">
       <button class="btn-main" style="padding:18px; font-size:15px; background:linear-gradient(135deg,#f18091,#ff9aa8); border-radius:18px; box-shadow:0 4px 15px rgba(241,128,145,0.25); border:none;" onclick="closeQuickAction(); goCaption();">✍️ 인스타 피드 글 작성</button>
       <button class="btn-main" style="padding:18px; font-size:15px; background:linear-gradient(135deg,#8fa4ff,#a3b4ff); border-radius:18px; box-shadow:0 4px 15px rgba(143,164,255,0.2); border:none;" onclick="closeQuickAction(); showTab('ba', document.querySelectorAll('.nav-btn')[2]);">📸 시술 후 사진 편집</button>
-      <button class="btn-main" style="padding:18px; font-size:15px; background:#f8f8f8; color:#ccc; border-radius:18px; border:none; cursor:not-allowed;" disabled>🎬 영상 편집 가이드 <span style="font-size:10px; opacity:0.6;">(준비중)</span></button>
     </div>
     <button onclick="closeQuickAction()" style="margin-top:28px; background:transparent; border:none; color:#bbb; font-size:13px; cursor:pointer; text-decoration:underline; font-weight:500;">나중에 할게요</button>
   </div>
@@ -364,35 +362,6 @@
   <button class="btn-main" id="reviewSaveBtn" style="display:none; margin-top:10px; background:linear-gradient(135deg,#2a8a5a,#1a6040);" onclick="saveReviewCard()">이미지 저장하기</button>
 </div>
 
-<!-- ===== 영상 탭 ===== -->
-<div class="tab" id="tab-video">
-  <div class="sec-title">영상 편집 가이드</div>
-  <div class="sec-sub">릴스 / 쇼츠 편집 팁 + AI 자막 스크립트 생성</div>
-  <div class="video-card">
-    <div class="video-card-title">📱 핸드폰 편집 추천 앱</div>
-    <p>CapCut (캡컷) — 무료, 한국어, 자동자막 기능 내장</p>
-    <div class="video-tip">CapCut → 자동 자막 → 한국어 선택 → 영상 올리면 자막 자동 생성 완료!</div>
-  </div>
-  <div class="video-card">
-    <div class="video-card-title">⏱ 릴스 추천 구성 (30초)</div>
-    <p>0~3초: 후킹 — After 결과물 먼저 보여주기<br>3~15초: 시술 과정 하이라이트<br>15~25초: 클로즈업 + 고객 반응<br>25~30초: 로고 + 계정 태그</p>
-    <div class="video-tip">처음 3초에 "이거 붙임머리예요" 자막 넣으면 체류시간 2배↑</div>
-  </div>
-  <div class="card-divider"></div>
-  <div class="sec-title" style="font-size:15px;">AI 자막 스크립트 생성</div>
-  <div class="sec-sub">영상 내용 간단히 입력하면 자막용 스크립트 써줘요</div>
-  <label>영상 내용</label>
-  <textarea id="videoMemo" rows="3" placeholder="예) 30인치 러버 붙임머리 시술 과정, 수원 고객, 블랙컬러, 재방문..."></textarea>
-  <label style="margin-top:14px;">영상 길이</label>
-  <div class="tag-row" id="durTags">
-    <span class="tag on" data-v="15초 릴스">15초</span>
-    <span class="tag" data-v="30초 릴스">30초</span>
-    <span class="tag" data-v="1분 릴스">1분</span>
-  </div>
-  <button class="btn-main" id="scriptBtn" onclick="generateScript()">스크립트 생성하기 🎬</button>
-  <div class="script-result" id="scriptResult"></div>
-  <button class="btn-copy" id="scriptCopyBtn" style="display:none; width:100%; margin-top:10px;" onclick="copyScript()">스크립트 복사</button>
-</div>
 
 <!-- ===== 글로벌 오버레이 & 팝업 ===== -->
 

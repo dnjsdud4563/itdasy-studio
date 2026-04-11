@@ -97,8 +97,6 @@ function applyShopType(type) {
 
   const baGuide = document.getElementById('baGuideText');
   if (baGuide) baGuide.textContent = cfg.baGuide;
-  const vm = document.getElementById('videoMemo');
-  if (vm) vm.placeholder = `예) ${cfg.scriptDefault}, 지역, 색상, 재방문...`;
 }
 
 // ===== 헤더 프로필 업데이트 =====
@@ -526,7 +524,7 @@ function getSel(id) {
 }
 
 // 태그 그룹 초기화
-initSingle('typeTags'); initSingle('locTags'); initSingle('durTags');
+initSingle('typeTags'); initSingle('locTags');
 document.querySelectorAll('.style-opts').forEach(g => {
   g.querySelectorAll('.style-opt').forEach(t => {
     t.addEventListener('click', () => { g.querySelectorAll('.style-opt').forEach(x => x.classList.remove('on')); t.classList.add('on'); });
@@ -878,29 +876,6 @@ function resetEdit() {
   if (input) input.value = '';
 }
 
-// ===== 영상 스크립트 =====
-async function generateScript() {
-  const memo    = document.getElementById('videoMemo').value;
-  const dur     = getSel('durTags')[0] || '30초 릴스';
-  const btn     = document.getElementById('scriptBtn');
-  const cfg     = SHOP_CONFIG[localStorage.getItem('shop_type') || '붙임머리'] || SHOP_CONFIG['붙임머리'];
-  btn.innerHTML = '<span class="spinner"></span>생성 중...'; btn.disabled = true;
-  try {
-    const res  = await fetch(API + '/caption/script', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ description: memo || cfg.scriptDefault, duration: dur })
-    });
-    if (res.status === 401) { setToken(null); document.getElementById('lockOverlay').classList.remove('hidden'); throw new Error('로그인이 필요합니다.'); }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || '생성 실패');
-    const el = document.getElementById('scriptResult');
-    el.textContent = data.script; el.classList.add('show');
-    document.getElementById('scriptCopyBtn').style.display = 'block';
-  } catch(e) { document.getElementById('scriptResult').textContent = '오류: ' + e.message; document.getElementById('scriptResult').classList.add('show'); }
-  btn.innerHTML = '다시 생성하기 🎬'; btn.disabled = false;
-}
-function copyScript() { navigator.clipboard.writeText(document.getElementById('scriptResult').textContent).then(() => flashBtn(document.getElementById('scriptCopyBtn'), '복사됨!')); }
 
 // ===== 고객 후기 카드 =====
 function renderReviewCard() {
