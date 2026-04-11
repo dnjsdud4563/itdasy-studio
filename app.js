@@ -266,7 +266,7 @@ async function logout() {
     const keys = await caches.keys();
     await Promise.all(keys.map(k => caches.delete(k)));
   }
-  location.href = 'app.html';
+  location.href = 'index.html';
 }
 
 // ===== 로그인 =====
