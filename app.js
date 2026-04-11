@@ -578,6 +578,9 @@ async function generateCaption() {
     const hashes = Array.isArray(data.hashtags) ? data.hashtags.map(h => h.startsWith('#') ? h : '#' + h).join(' ') : data.hashtags;
     document.getElementById('captionText').textContent = data.caption;
     document.getElementById('captionHash').textContent = hashes;
+    // BA탭 publishCaptionPreview 자동 동기화 (사진탭에서 바로 업로드 가능하도록)
+    const _previewInput = document.getElementById('publishCaptionPreview');
+    if (_previewInput) _previewInput.value = data.caption + (hashes ? '\n\n' + hashes : '');
     hideCaptionLoader(true);
     setTimeout(() => { document.getElementById('captionResult').style.display = 'block'; }, 300);
   } catch(e) {
@@ -711,7 +714,8 @@ function renderBA() {
     drawLabel(ctx, 'AFTER ✨', W/2, hh*2 + PAD*2 + 14, W);
   }
   if (wm !== 'wm0') {
-    const wmText = wm === 'wm1' ? '🎀 @itdasy' : '잇데이 붙임머리';
+    const _sn = localStorage.getItem('shop_name') || '잇데이';
+    const wmText = wm === 'wm1' ? (_instaHandle ? `@${_instaHandle}` : _sn) : _sn;
     ctx.fillStyle = 'rgba(232,160,176,0.9)'; ctx.font = '500 28px "Noto Sans KR", sans-serif';
     ctx.textAlign = 'center'; ctx.fillText(wmText, W/2, H - 22);
   }
@@ -727,6 +731,7 @@ function renderBA() {
   document.getElementById('publishArea').style.display = 'block';
   document.getElementById('saveBtn').style.display = 'block';
   document.getElementById('resetBaBtn').style.display = 'block';
+  document.getElementById('editPhotosBtn').style.display = 'block';
 }
 
 function drawLabel(ctx, text, x, y, W) {
@@ -745,7 +750,14 @@ function resetBA() {
   imgs.before = imgs.after = null;
   ['beforePreview','afterPreview'].forEach(id => { document.getElementById(id).style.display = 'none'; });
   ['beforeArea','afterArea'].forEach(id     => { document.getElementById(id).style.display = 'block'; });
-  ['baCanvas','saveBtn','resetBaBtn','publishConfirmArea','publishArea'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+  ['baCanvas','saveBtn','resetBaBtn','editPhotosBtn','publishConfirmArea','publishArea'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+  document.querySelectorAll('#tab-ba input[type=file]').forEach(i => i.value = '');
+}
+function editBAPhotos() {
+  // 캔버스/결과 숨기고 업로드 영역 다시 보여주기 (기존 이미지 데이터는 유지)
+  ['baCanvas','saveBtn','resetBaBtn','editPhotosBtn','publishConfirmArea','publishArea'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+  ['beforeArea','afterArea'].forEach(id => { document.getElementById(id).style.display = 'block'; });
+  // 기존 미리보기는 그대로 두되 재선택 가능하도록 file input만 초기화
   document.querySelectorAll('#tab-ba input[type=file]').forEach(i => i.value = '');
 }
 function createConfetti() {
@@ -838,7 +850,7 @@ async function renderEdit() {
     const pw = personImg.width * scale, ph = personImg.height * scale;
     ctx.drawImage(personImg, (W - pw) / 2, H - ph - H * 0.02, pw, ph);
     if (wm !== 'wm0') {
-      const wmText = '🎀 @itdasy'; const fs = 32;
+      const wmText = _instaHandle ? `@${_instaHandle}` : (localStorage.getItem('shop_name') || '잇데이'); const fs = 32;
       ctx.font = `500 ${fs}px "Noto Sans KR", sans-serif`; ctx.textAlign = 'center';
       const tw = ctx.measureText(wmText).width;
       ctx.fillStyle = 'rgba(15,6,8,0.5)'; ctx.beginPath();
