@@ -524,7 +524,7 @@ function getSel(id) {
 }
 
 // 태그 그룹 초기화
-initSingle('typeTags'); initSingle('locTags');
+initSingle('typeTags');
 document.querySelectorAll('.style-opts').forEach(g => {
   g.querySelectorAll('.style-opt').forEach(t => {
     t.addEventListener('click', () => { g.querySelectorAll('.style-opt').forEach(x => x.classList.remove('on')); t.classList.add('on'); });
@@ -557,7 +557,6 @@ function hideCaptionLoader(success) {
 // ===== 캡션 생성 =====
 async function generateCaption() {
   const types    = getSel('typeTags');
-  const loc      = getSel('locTags')[0] || '수원';
   const memo     = document.getElementById('captionMemo').value;
   const ctaType  = getSel('ctaTags')[0] || 'DM';
   const btn      = document.getElementById('captionBtn');
@@ -571,7 +570,7 @@ async function generateCaption() {
     const res  = await fetch(API + '/caption/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ description: `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 지역: ${loc}. 업종: ${shopType}. ${memo || ''}${ctaType !== '없음' ? `. 캡션 마지막에 "${ctaType}으로 예약 문의 주세요" 스타일의 예약 CTA를 원장님 말투로 자연스럽게 한 줄 넣어주세요.` : ''}`, platform: 'instagram' })
+      body: JSON.stringify({ description: `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 업종: ${shopType}. ${memo || ''}${ctaType !== '없음' ? `. 캡션 마지막에 "${ctaType}으로 예약 문의 주세요" 스타일의 예약 CTA를 원장님 말투로 자연스럽게 한 줄 넣어주세요.` : ''}`, platform: 'instagram' })
     });
     if (res.status === 401) { setToken(null); document.getElementById('lockOverlay').classList.remove('hidden'); throw new Error('로그인이 필요합니다.'); }
     const data = await res.json();
