@@ -241,8 +241,15 @@
     </div>
     <label style="margin-top:10px;">오늘 어떤 작업을 하셨나요?</label>
     <textarea id="captionMemo" rows="4" placeholder="키워드만 툭 던져주세요. AI가 찰떡같이 포장해줍니다!&#10;예) 타샵 망함 복구, 매듭 얇게, 고객 엄청 좋아함 ㅋㅋ"></textarea>
+    <label style="margin-top:10px;">예약 CTA</label>
+    <div class="tag-row" id="ctaTags">
+      <span class="tag on" data-v="DM">DM 예약</span>
+      <span class="tag" data-v="카카오톡">카카오톡 예약</span>
+      <span class="tag" data-v="링크인바이오">링크인바이오</span>
+      <span class="tag" data-v="없음">없음</span>
+    </div>
   </div>
-  <button class="btn-main" id="captionBtn" onclick="generateCaption()">피드 글 작성하기 ✨</button>
+  <button class="btn-main" id="captionBtn" onclick="generateCaption()">피드 글 작성하기</button>
   <!-- 인스타 프레임 결과 -->
   <div class="insta-frame" id="captionResult" style="display:none;">
     <div class="insta-frame-header">

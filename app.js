@@ -561,6 +561,7 @@ async function generateCaption() {
   const types    = getSel('typeTags');
   const loc      = getSel('locTags')[0] || '수원';
   const memo     = document.getElementById('captionMemo').value;
+  const ctaType  = getSel('ctaTags')[0] || 'DM';
   const btn      = document.getElementById('captionBtn');
   const shopType = localStorage.getItem('shop_type') || '붙임머리';
   const cfg      = SHOP_CONFIG[shopType] || SHOP_CONFIG['붙임머리'];
@@ -572,7 +573,7 @@ async function generateCaption() {
     const res  = await fetch(API + '/caption/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ description: `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 지역: ${loc}. 업종: ${shopType}. ${memo || ''}`, platform: 'instagram' })
+      body: JSON.stringify({ description: `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 지역: ${loc}. 업종: ${shopType}. ${memo || ''}${ctaType !== '없음' ? `. 캡션 마지막에 "${ctaType}으로 예약 문의 주세요" 스타일의 예약 CTA를 원장님 말투로 자연스럽게 한 줄 넣어주세요.` : ''}`, platform: 'instagram' })
     });
     if (res.status === 401) { setToken(null); document.getElementById('lockOverlay').classList.remove('hidden'); throw new Error('로그인이 필요합니다.'); }
     const data = await res.json();
