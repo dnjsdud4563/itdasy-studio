@@ -901,67 +901,6 @@ async function generateScript() {
 }
 function copyScript() { navigator.clipboard.writeText(document.getElementById('scriptResult').textContent).then(() => flashBtn(document.getElementById('scriptCopyBtn'), '복사됨!')); }
 
-// ===== 마케팅 (노쇼 방어) =====
-function openMarketingModal(type) {
-  if (type !== 'noshow') return;
-  document.getElementById('marketingModal').classList.add('active');
-  document.getElementById('msTime').value = '';
-  document.getElementById('msDiscount').value = '';
-  document.getElementById('msService').value = (localStorage.getItem('shop_type') || '붙임머리') + ' 시술';
-}
-function closeMarketingModal() { document.getElementById('marketingModal').classList.remove('active'); }
-
-let currentMarketingData = null;
-async function generateMarketing() {
-  const time     = document.getElementById('msTime').value.trim();
-  const service  = document.getElementById('msService').value.trim();
-  const discount = document.getElementById('msDiscount').value.trim();
-  if (!time || !service || !discount) { alert('모든 정보를 입력해주세요!'); return; }
-  const btn = document.getElementById('msSubmitBtn');
-  btn.disabled = true; btn.textContent = 'AI 생성 중... 🤖';
-  try {
-    const res = await fetch(`${API}/marketing/generate-no-show`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ time_slot: time, service_name: service, discount_rate: discount })
-    });
-    if (!res.ok) throw new Error('생성 실패');
-    const data = await res.json();
-    showMarketingPreview(data.caption, data.image_url);
-  } catch(e) { alert('AI 생성 중 오류가 발생했습니다.'); }
-  btn.disabled = false; btn.textContent = '발행하기 ✨';
-}
-
-function showMarketingPreview(caption, imageUrl) {
-  currentMarketingData = { caption, imageUrl };
-  document.getElementById('marketingModal').querySelector('.modal-content').innerHTML = `
-    <div class="modal-title">✨ AI 마케팅 카드 생성 완료</div>
-    <div class="modal-sub">사장님 말투를 담은 캡션과 전용 이미지가 준비됐습니다!</div>
-    <div style="margin-bottom:16px; border-radius:12px; overflow:hidden; border:0.5px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-       <img src="${API}${imageUrl}" style="width:100%; display:block;">
-    </div>
-    <div style="background:var(--bg3); padding:12px; border-radius:10px; font-size:13px; line-height:1.6; max-height:120px; overflow-y:auto; border:0.5px solid var(--border); white-space:pre-wrap; color:var(--text);">${caption}</div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeMarketingModal()">닫기</button>
-      <button class="btn-confirm" onclick="publishMarketing()">스토리로 즉시 올리기 🚀</button>
-    </div>`;
-}
-
-async function publishMarketing() {
-  if (!currentMarketingData || !confirm('인스타그램 스토리에 지금 바로 올릴까요?')) return;
-  const btn = document.querySelector('#marketingModal .btn-confirm');
-  if (btn) { btn.disabled = true; btn.textContent = '올리는 중...'; }
-  try {
-    const res = await fetch(`${API}/instagram/publish-story`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ image_url: currentMarketingData.imageUrl, caption: currentMarketingData.caption })
-    });
-    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || '발행 실패'); }
-    alert('스토리에 성공적으로 올라갔습니다! 🎉'); closeMarketingModal();
-  } catch(e) {
-    alert('발행 중 오류: ' + e.message);
-    if (btn) { btn.disabled = false; btn.textContent = '인스타에 즉시 발행하기 🚀'; }
-  }
-}
 
 // ===== Service Worker =====
 if ('serviceWorker' in navigator) {

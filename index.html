@@ -79,20 +79,6 @@
   <button class="ob-btn" id="obBtn" onclick="obNext()">계속하기</button>
 </div>
 
-<!-- ───── 마케팅 모달 ───── -->
-<div class="modal-overlay" id="marketingModal">
-  <div class="modal-content">
-    <div class="modal-title">🚨 긴급 노쇼 방어 발행</div>
-    <div class="modal-sub">비어버린 예약 시간을 AI가 예쁘게 포장해서 인스타에 올려드릴게요.</div>
-    <div class="input-group"><label>예약 가능 시간</label><input type="text" class="modal-input" id="msTime" placeholder="예) 오늘 오후 2시"></div>
-    <div class="input-group"><label>서비스 내용 (메뉴)</label><input type="text" class="modal-input" id="msService" placeholder="예) 옴브레 전체 시술"></div>
-    <div class="input-group"><label>할인 혜택</label><input type="text" class="modal-input" id="msDiscount" placeholder="예) 20% 할인 / 트리트먼트 서비스"></div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeMarketingModal()">취소</button>
-      <button class="btn-confirm" id="msSubmitBtn" onclick="generateMarketing()">발행하기 ✨</button>
-    </div>
-  </div>
-</div>
 
 <!-- ───── Pull-to-Refresh 바 ───── -->
 <div id="ptrBar">
@@ -190,14 +176,6 @@
     </div>
   </div>
 
-  <!-- 긴급 예약 카드 -->
-  <div class="home-urgent-card" onclick="openMarketingModal('noshow')">
-    <div style="flex:1;">
-      <div class="home-urgent-title">긴급 예약</div>
-      <div class="home-urgent-desc">빈 시간을 즉시 홍보로 바꾸세요</div>
-    </div>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D95F70" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-  </div>
 
   <!-- 말투 분석 오버레이 -->
   <div id="analyzeOverlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:40px;">
