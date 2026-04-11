@@ -286,6 +286,7 @@ async function login() {
     document.getElementById('lockOverlay').classList.add('hidden');
     checkCbt1Reset();
     checkOnboarding();
+    updateHomeGreeting();
     checkInstaStatus(true);
   } catch(e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
   btn.textContent = '로그인'; btn.disabled = false;
@@ -304,6 +305,7 @@ if (getToken()) {
   document.getElementById('lockOverlay').classList.add('hidden');
   checkCbt1Reset();
   checkOnboarding();
+  updateHomeGreeting();
   checkInstaStatus().then(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('connected') === 'success') {
@@ -365,17 +367,14 @@ async function checkInstaStatus(fromLogin = false) {
 function renderPersonaDash(p) {
   document.getElementById('personaDash').style.display = 'block';
   const content = document.getElementById('personaContent');
-  if (content) {
-    content.innerHTML = `
-      <div style="background:rgba(241,128,145,0.04); padding:14px; border-radius:14px; border:0.5px solid rgba(241,128,145,0.15); margin-bottom:16px;">
-        <div style="margin-bottom:8px; font-size:11px; color:var(--accent2); font-weight:700;">💬 말투 요약</div>
-        <div style="font-size:13px; color:var(--text); line-height:1.6; font-weight:500;">"${p.tone || '친근하고 공손한 말투'}"</div>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:8px;">
-        <button class="btn-copy" style="width:100%; height:42px; font-size:13px; font-weight:600; border:1px solid var(--accent2); background:white; color:var(--accent2); border-radius:10px;" onclick="showDetailedAnalysis()">📋 전체 분석 리포트 확인</button>
-        <button class="btn-copy" style="width:100%; height:42px; font-size:13px; font-weight:600; background:rgba(232,160,176,0.1); color:var(--accent2); border-radius:10px; border:none;" onclick="reAnalyzePersona()">🔄 내 말투 다시 분석하기</button>
-      </div>`;
-  }
+  if (content) content.textContent = p.tone || '친근하고 공손한 말투';
+}
+
+function updateHomeGreeting() {
+  const el = document.getElementById('homeGreeting');
+  if (!el) return;
+  const name = localStorage.getItem('shop_name') || '';
+  el.textContent = name ? `${name} 대표님, 안녕하세요` : '대표님, 안녕하세요';
 }
 
 function showDetailedAnalysis() {

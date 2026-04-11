@@ -147,20 +147,24 @@
 
 <!-- ===== 홈 탭 ===== -->
 <div class="tab active" id="tab-home">
-  <div class="home-hero"><span class="home-logo-big">잇데이</span></div>
-  <div class="home-btn-wrap">
-    <button class="btn-round-main" onclick="openQuickAction()">
-      <span class="btn-round-sub">3초 만에</span>
-      <span class="btn-round-label">피드 글 만들기</span>
-    </button>
-  </div>
+  <!-- 인사 텍스트 -->
+  <div class="home-greeting" id="homeGreeting">대표님, 안녕하세요</div>
 
-  <!-- 인스타 연동 카드 -->
-  <div class="insta-connect-card" id="instaCard">
+  <!-- 메인 CTA -->
+  <button class="home-cta-card" onclick="goCaption()">
+    <div class="home-cta-left">
+      <div class="home-cta-title">피드 글 만들기</div>
+      <div class="home-cta-sub">말투 분석 완료 · 바로 시작하세요</div>
+    </div>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  </button>
+
+  <!-- 내 말투 카드 -->
+  <div class="home-persona-card" id="instaCard">
     <div id="instaConnectRow" style="display:flex; align-items:center; gap:12px;">
       <div style="flex:1;">
-        <div style="font-size:13px; font-weight:600; color:var(--text2); margin-bottom:2px;">인스타 계정 연동</div>
-        <div style="font-size:12px; color:var(--text3); line-height:1.5;" id="instaStatusText">연동하면 내 말투로 자동 캡션 생성</div>
+        <div class="home-persona-title">인스타 계정 연동</div>
+        <div class="home-persona-desc" id="instaStatusText">연동하면 내 말투로 자동 캡션 생성</div>
       </div>
       <button class="btn-insta" id="instaBtn" onclick="connectInstagram()">연동하기</button>
     </div>
@@ -172,26 +176,27 @@
       </div>
       <div id="consentBody" style="display:none; margin-top:8px; padding:10px; background:rgba(241,128,145,0.06); border-radius:8px; border:0.5px solid rgba(241,128,145,0.2);">
         <div style="line-height:1.6; margin-bottom:8px;">AI 분석용 데이터 수집 및 인스타그램 게시물 발행에 활용됩니다.<br><span style="font-size:10px; color:#888;">AI 저작권 면책 준수 포함.</span></div>
-        <a href="privacy.html" target="_blank" style="color:var(--accent2); text-decoration:underline; font-size:11px;">📄 개인정보처리방침 전문 보기</a>
+        <a href="privacy.html" target="_blank" style="color:var(--accent2); text-decoration:underline; font-size:11px;">개인정보처리방침 전문 보기</a>
       </div>
     </div>
     <!-- 말투 학습 결과 -->
     <div id="personaDash" style="display:none;">
-      <div style="font-size:13px; font-weight:700; color:var(--text2); margin-bottom:12px; letter-spacing:-0.02em;">내 말투 학습 결과</div>
-      <div id="personaContent"></div>
+      <div class="home-persona-title" style="margin-bottom:6px;">내 말투 학습 결과</div>
+      <div class="home-persona-desc" id="personaContent"></div>
+      <div class="home-persona-btns">
+        <button class="home-persona-btn" onclick="showDetailedAnalysis()">분석 리포트</button>
+        <button class="home-persona-btn" onclick="reAnalyzePersona()">다시 분석</button>
+      </div>
     </div>
   </div>
 
-  <!-- 노쇼 방어 카드 -->
-  <div class="home-cards" style="margin-top:14px;">
-    <div class="home-card" style="border:1.5px solid rgba(241,128,145,0.3); background:rgba(241,128,145,0.04);" onclick="openMarketingModal('noshow')">
-      <div class="home-card-icon">🚨</div>
-      <div style="flex:1;">
-        <div class="home-card-title" style="color:var(--accent2);">긴급! 노쇼 방어</div>
-        <div class="home-card-desc">취소된 자리를 1분 만에 채우는 긴급 공지 발행</div>
-      </div>
-      <div class="home-card-arrow" style="color:var(--accent);">🔥</div>
+  <!-- 긴급 예약 카드 -->
+  <div class="home-urgent-card" onclick="openMarketingModal('noshow')">
+    <div style="flex:1;">
+      <div class="home-urgent-title">긴급 예약</div>
+      <div class="home-urgent-desc">빈 시간을 즉시 홍보로 바꾸세요</div>
     </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D95F70" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
   </div>
 
   <!-- 말투 분석 오버레이 -->

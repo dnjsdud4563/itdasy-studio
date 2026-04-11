@@ -234,43 +234,52 @@ textarea:focus, input[type=text]:focus { border-color: var(--accent); }
 .card-divider { height: 1px; background: var(--border); margin: 24px 0; }
 
 /* ===== 홈 탭 ===== */
-.home-hero { text-align: center; padding: 14px 0 8px; }
-.home-logo-big { font-size: 28px; font-weight: 800; color: var(--accent); display: block; letter-spacing: -0.05em; }
-.home-logo-sub { font-size: 11px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 24px; font-weight: 500; }
-.home-btn-wrap { display: flex; justify-content: center; padding: 12px 0 28px; }
-.btn-round-main {
-  width: 200px; height: 200px; border-radius: 50%;
-  background: linear-gradient(135deg, #F18091, #D95F70);
-  box-shadow: 0 12px 40px rgba(241,128,145,0.4);
-  border: none; cursor: pointer; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 3px;
+.home-greeting {
+  font-size: 13px; color: var(--text3); font-weight: 500;
+  padding-top: 28px; padding-bottom: 16px; letter-spacing: -0.01em;
+}
+.home-cta-card {
+  width: 100%; background: linear-gradient(135deg, #F18091, #D95F70);
+  border-radius: 24px; padding: 28px 24px; border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 8px 24px rgba(241,128,145,0.3);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
   touch-action: manipulation; -webkit-user-select: none; user-select: none;
+  margin-bottom: 12px;
 }
-.btn-round-main:active { transform: scale(0.96); box-shadow: 0 6px 22px rgba(241,128,145,0.35); }
-.btn-round-sub  { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.8); font-family: 'Pretendard', sans-serif; letter-spacing: -0.02em; }
-.btn-round-label { font-size: 17px; font-weight: 700; color: #fff; font-family: 'Pretendard', sans-serif; letter-spacing: -0.03em; }
-.home-card {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
-  padding: 18px 20px; display: flex; align-items: center; gap: 16px;
-  cursor: pointer; transition: box-shadow 0.2s, transform 0.1s;
-  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+.home-cta-card:active { transform: scale(0.99); box-shadow: 0 4px 14px rgba(241,128,145,0.25); }
+.home-cta-left { flex: 1; text-align: left; }
+.home-cta-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.04em; margin-bottom: 6px; }
+.home-cta-sub { font-size: 13px; color: rgba(255,255,255,0.75); letter-spacing: -0.01em; }
+.home-persona-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 20px;
+  padding: 20px; margin-bottom: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.05);
 }
-.home-card:active { transform: scale(0.99); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-.home-card-icon  { font-size: 28px; flex-shrink: 0; }
-.home-card-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 3px; letter-spacing: -0.02em; }
-.home-card-desc  { font-size: 12px; color: var(--text3); line-height: 1.5; }
-.home-card-arrow { margin-left: auto; color: var(--text3); font-size: 18px; flex-shrink: 0; }
+.home-persona-title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+.home-persona-desc { font-size: 13px; color: var(--text3); margin-top: 4px; line-height: 1.5; }
+.home-persona-btns { display: flex; gap: 8px; margin-top: 14px; }
+.home-persona-btn {
+  flex: 1; padding: 10px 0; font-size: 13px; font-weight: 600;
+  font-family: 'Pretendard', sans-serif; letter-spacing: -0.02em;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--bg2); color: var(--text2); cursor: pointer;
+  transition: background 0.15s;
+}
+.home-persona-btn:active { background: var(--bg3); }
+.home-urgent-card {
+  background: rgba(241,128,145,0.06); border: 1px solid rgba(241,128,145,0.2);
+  border-radius: 20px; padding: 20px; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: transform 0.1s; margin-bottom: 12px;
+}
+.home-urgent-card:active { transform: scale(0.99); }
+.home-urgent-title { font-size: 15px; font-weight: 700; color: #D95F70; margin-bottom: 4px; letter-spacing: -0.02em; }
+.home-urgent-desc { font-size: 13px; color: var(--text3); }
 .install-banner {
   background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
   padding: 16px 18px; margin-top: 24px; font-size: 13px; color: var(--text2);
   line-height: 1.7; box-shadow: 0 1px 6px rgba(0,0,0,0.04);
 }
 .install-banner strong { color: var(--accent); font-weight: 600; }
-.insta-connect-card {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
-  padding: 18px; margin-top: 16px; box-shadow: 0 1px 8px rgba(0,0,0,0.05);
-}
 .btn-insta {
   flex-shrink: 0; padding: 9px 16px; font-size: 13px; font-weight: 600;
   font-family: 'Pretendard', sans-serif; letter-spacing: -0.02em;
