@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="잇데이">
+<meta name="theme-color" content="#F2F4F6">
+<title>잇데이 스튜디오</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ───── 스플래시 ───── -->
+<div id="splashScreen" style="display:none;">
+  <div class="spl-logo">잇데이</div>
+  <div class="spl-sub">ITDASY STUDIO</div>
+  <div class="spl-ribbon">🎀</div>
+  <div class="spl-progress-wrap"><div class="spl-progress-fill"></div></div>
+  <div class="spl-slogan">사장님의 시간을 아껴, 매출을 잇습니다.</div>
+</div>
+
+<!-- ───── 로그인 ───── -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-title">잇데이 스튜디오</div>
+  <div class="lock-sub">ITDASY STUDIO</div>
+  <div style="margin:24px 0; text-align:center;">
+    <div style="font-size:18px; font-weight:800; color:var(--text); line-height:1.4; letter-spacing:-0.5px;">인스타 게시물 작성부터<br>사진 편집, 영상 편집까지</div>
+    <div style="margin-top:8px; font-size:15px; font-weight:700; color:var(--accent2);">핸드폰 하나로 끝.</div>
+    <div style="margin-top:12px; font-size:12px; color:var(--text3); font-weight:500;">"사장님의 시간을 아껴, 매출을 잇습니다."</div>
+  </div>
+  <div style="margin-bottom:20px; font-size:13px; color:var(--accent); font-weight:600; display:none;" id="sessionExpiredMsg">⚠️ 로그인 세션이 만료되었습니다. 다시 로그인해주세요.</div>
+  <input type="email" class="login-input" id="loginEmail" placeholder="이메일" autocomplete="email">
+  <input type="password" class="login-input" id="loginPassword" placeholder="비밀번호" autocomplete="current-password">
+  <div class="login-error" id="loginError"></div>
+  <button class="pin-btn" id="loginBtn" onclick="login()">로그인</button>
+  <a href="app.html" style="display:block; margin-top:24px; font-size:13px; color:var(--text3); text-decoration:none;">홈으로 돌아가기</a>
+</div>
+
+<!-- ───── 온보딩 ───── -->
+<div class="ob-overlay hidden" id="onboardingOverlay">
+  <div class="ob-dots">
+    <div class="ob-dot active" id="obDot1"></div>
+    <div class="ob-dot" id="obDot2"></div>
+    <div class="ob-dot" id="obDot3"></div>
+    <div class="ob-dot" id="obDot4"></div>
+  </div>
+  <div class="ob-step active" id="ob-step-1">
+    <div class="ob-emoji">👋</div>
+    <div class="ob-title">안녕하세요!<br>어떤 샵을 운영하고 계세요?</div>
+    <div class="ob-sub">딱 맞는 AI 비서를 세팅해 드릴게요</div>
+  </div>
+  <div class="ob-step" id="ob-step-2">
+    <div class="ob-title" style="margin-bottom:20px;">샵 종류를 선택해 주세요</div>
+    <div class="ob-shop-grid">
+      <div class="ob-shop-card" data-type="붙임머리" onclick="selectShopType(this)"><div class="ob-shop-icon">💇</div><div class="ob-shop-name">붙임머리</div></div>
+      <div class="ob-shop-card" data-type="네일아트" onclick="selectShopType(this)"><div class="ob-shop-icon">💅</div><div class="ob-shop-name">네일아트</div></div>
+      <div class="ob-shop-card disabled"><div class="ob-shop-icon">✂️</div><div class="ob-shop-name">헤어샵</div><div class="ob-shop-badge">준비중</div></div>
+      <div class="ob-shop-card disabled"><div class="ob-shop-icon">👁️</div><div class="ob-shop-name">속눈썹</div><div class="ob-shop-badge">준비중</div></div>
+    </div>
+  </div>
+  <div class="ob-step" id="ob-step-3">
+    <div class="ob-emoji">🏪</div>
+    <div class="ob-title">샵 이름이<br>어떻게 되세요?</div>
+    <div class="ob-sub" style="margin-bottom:20px;">캡션에 자동으로 반영돼요</div>
+    <div class="ob-underline-wrap">
+      <input class="ob-underline-input" id="obShopNameInput" type="text" placeholder="예) 잇데이 붙임머리" maxlength="20" autocomplete="off">
+    </div>
+  </div>
+  <div class="ob-step" id="ob-step-4">
+    <div class="ob-emoji">🎉</div>
+    <div class="ob-title">준비됐어요!</div>
+    <div class="ob-sub"><span class="ob-complete-name" id="obCompleteName"></span>만을 위한<br>AI 비서가 지금 시작됩니다</div>
+  </div>
+  <button class="ob-btn" id="obBtn" onclick="obNext()">계속하기</button>
+</div>
+
+<!-- ───── 마케팅 모달 ───── -->
+<div class="modal-overlay" id="marketingModal">
+  <div class="modal-content">
+    <div class="modal-title">🚨 긴급 노쇼 방어 발행</div>
+    <div class="modal-sub">비어버린 예약 시간을 AI가 예쁘게 포장해서 인스타에 올려드릴게요.</div>
+    <div class="input-group"><label>예약 가능 시간</label><input type="text" class="modal-input" id="msTime" placeholder="예) 오늘 오후 2시"></div>
+    <div class="input-group"><label>서비스 내용 (메뉴)</label><input type="text" class="modal-input" id="msService" placeholder="예) 옴브레 전체 시술"></div>
+    <div class="input-group"><label>할인 혜택</label><input type="text" class="modal-input" id="msDiscount" placeholder="예) 20% 할인 / 트리트먼트 서비스"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeMarketingModal()">취소</button>
+      <button class="btn-confirm" id="msSubmitBtn" onclick="generateMarketing()">발행하기 ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───── Pull-to-Refresh 바 ───── -->
+<div id="ptrBar">
+  <span id="ptrEmoji">🎀</span>
+  <span id="ptrLabel">당겨서 새로고침</span>
+</div>
+
+<!-- ───── 앱 헤더 ───── -->
+<div class="app-header">
+  <div class="logo" onclick="showTab('home', document.querySelectorAll('.nav-btn')[0])">잇데이 <span>STUDIO</span></div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <div class="header-persona" id="headerPersona">
+      <div class="profile-avatar" id="headerAvatar">잇</div>
+    </div>
+    <button class="btn-settings" onclick="openSettings()" aria-label="설정">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F18091" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/>
+        <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ───── 설정 바텀시트 ───── -->
+<div id="settingsSheet">
+  <div id="settingsBackdrop" onclick="closeSettings()"></div>
+  <div id="settingsCard">
+    <div class="sheet-handle"></div>
+    <div class="settings-profile-card">
+      <div class="settings-profile-avatar" id="settingsAvatar">잇</div>
+      <div>
+        <div class="settings-profile-name" id="settingsProfileName">사장님</div>
+        <div class="settings-profile-handle" id="settingsProfileHandle"></div>
+      </div>
+    </div>
+    <button class="sheet-row" onclick="closeSettings(); connectInstagram();">인스타 다시 연결하기</button>
+    <button class="sheet-row" onclick="closeSettings(); runPersonaAnalyze();">내 말투 새로 분석하기</button>
+    <button class="sheet-row" onclick="closeSettings(); resetShopSetup();">샵 정보 다시 설정하기</button>
+    <div class="sheet-sep"></div>
+    <button class="sheet-row muted" onclick="closeSettings(); localReset();">앱 전체 초기화</button>
+    <button class="sheet-row danger" onclick="closeSettings(); logout();">로그아웃</button>
+  </div>
+</div>
+
+<!-- ───── 탭 네비 ───── -->
+<div class="nav" id="nav">
+  <button class="nav-btn active" onclick="showTab('home',this)">홈</button>
+  <button class="nav-btn" onclick="showTab('caption',this)">피드 글 작성</button>
+  <button class="nav-btn" onclick="showTab('ba',this)">사진 편집</button>
+  <button class="nav-btn" onclick="showTab('video',this)">영상 편집</button>
+</div>
+
+<!-- ===== 홈 탭 ===== -->
+<div class="tab active" id="tab-home">
+  <div class="home-hero"><span class="home-logo-big">잇데이</span></div>
+  <div class="home-btn-wrap">
+    <button class="btn-round-main" onclick="openQuickAction()">
+      <span class="btn-round-sub">3초 만에</span>
+      <span class="btn-round-label">피드 글 만들기</span>
+    </button>
+  </div>
+
+  <!-- 인스타 연동 카드 -->
+  <div class="insta-connect-card" id="instaCard">
+    <div id="instaConnectRow" style="display:flex; align-items:center; gap:12px;">
+      <div style="flex:1;">
+        <div style="font-size:13px; font-weight:600; color:var(--text2); margin-bottom:2px;">인스타 계정 연동</div>
+        <div style="font-size:12px; color:var(--text3); line-height:1.5;" id="instaStatusText">연동하면 내 말투로 자동 캡션 생성</div>
+      </div>
+      <button class="btn-insta" id="instaBtn" onclick="connectInstagram()">연동하기</button>
+    </div>
+    <!-- 개인정보 동의 -->
+    <div id="privacyConsentWrap" style="margin-top:10px; font-size:11px; color:var(--text3); display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="(function(){const b=document.getElementById('consentBody');const arr=document.getElementById('consentArrow');if(b.style.display==='none'){b.style.display='block';arr.textContent='▲';}else{b.style.display='none';arr.textContent='▼';}})()">
+        <span id="consentArrow" style="font-size:9px; color:var(--accent2);">▼</span>
+        <span id="consentTimestampDisplay" style="color:var(--accent2); font-size:10px; display:none;"></span>
+      </div>
+      <div id="consentBody" style="display:none; margin-top:8px; padding:10px; background:rgba(241,128,145,0.06); border-radius:8px; border:0.5px solid rgba(241,128,145,0.2);">
+        <div style="line-height:1.6; margin-bottom:8px;">AI 분석용 데이터 수집 및 인스타그램 게시물 발행에 활용됩니다.<br><span style="font-size:10px; color:#888;">AI 저작권 면책 준수 포함.</span></div>
+        <a href="privacy.html" target="_blank" style="color:var(--accent2); text-decoration:underline; font-size:11px;">📄 개인정보처리방침 전문 보기</a>
+      </div>
+    </div>
+    <!-- 말투 학습 결과 -->
+    <div id="personaDash" style="display:none;">
+      <div style="font-size:13px; font-weight:700; color:var(--text2); margin-bottom:12px; letter-spacing:-0.02em;">내 말투 학습 결과</div>
+      <div id="personaContent"></div>
+    </div>
+  </div>
+
+  <!-- 노쇼 방어 카드 -->
+  <div class="home-cards" style="margin-top:14px;">
+    <div class="home-card" style="border:1.5px solid rgba(241,128,145,0.3); background:rgba(241,128,145,0.04);" onclick="openMarketingModal('noshow')">
+      <div class="home-card-icon">🚨</div>
+      <div style="flex:1;">
+        <div class="home-card-title" style="color:var(--accent2);">긴급! 노쇼 방어</div>
+        <div class="home-card-desc">취소된 자리를 1분 만에 채우는 긴급 공지 발행</div>
+      </div>
+      <div class="home-card-arrow" style="color:var(--accent);">🔥</div>
+    </div>
+  </div>
+
+  <!-- 말투 분석 오버레이 -->
+  <div id="analyzeOverlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:40px;">
+    <div style="background:#fff; border-radius:28px; box-shadow:0 20px 50px rgba(0,0,0,0.1); border:1px solid rgba(241,128,145,0.1); padding:40px 36px; text-align:center; min-width:260px;">
+      <div style="font-size:36px; margin-bottom:16px;">🤖</div>
+      <div id="analyzeStepText" style="font-size:15px; font-weight:700; color:var(--text); margin-bottom:20px;">분석 준비 중...</div>
+      <div style="width:100%; height:6px; background:rgba(241,128,145,0.15); border-radius:3px; overflow:hidden;">
+        <div id="analyzeProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg,#f18091,#fd1d1d,#fcb045); border-radius:3px; transition:width 0.6s ease;"></div>
+      </div>
+      <div id="analyzeSubText" style="margin-top:14px; font-size:12px; color:var(--text3);">잠시만 기다려 주세요</div>
+    </div>
+  </div>
+
+  <!-- 말투 분석 결과 팝업 -->
+  <div id="analyzeResultPopup" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:9999; overflow-y:auto; padding:24px 20px;">
+    <div class="animate-popup-in" style="max-width:420px; margin:40px auto; background:#fff; border-radius:28px; box-shadow:0 20px 50px rgba(0,0,0,0.1); border:1px solid rgba(241,128,145,0.15); padding:32px; position:relative;">
+      <div style="text-align:center; font-size:32px; margin-bottom:12px;">💌</div>
+      <div style="text-align:center; font-size:20px; font-weight:800; color:var(--text); letter-spacing:-0.5px; margin-bottom:8px;">사장님만의 말투를 담았어요</div>
+      <div style="text-align:center; font-size:13px; color:var(--text3); margin-bottom:28px;">AI가 정성스레 분석한 대표님의 성공 공식입니다.</div>
+      <div id="analyzeResultBody"></div>
+      <button onclick="document.getElementById('analyzeResultPopup').style.display='none'" style="margin-top:30px; width:100%; height:54px; border-radius:16px; border:none; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:15px; font-weight:800; cursor:pointer;">확인했습니다</button>
+    </div>
+  </div>
+
+  <div class="install-banner">
+    <strong>앱으로 설치하기</strong><br>
+    Safari → 공유버튼 → "홈 화면에 추가" 탭하면<br>앱 아이콘으로 설치돼요 🎀
+  </div>
+  <div id="cbt1ResetArea" style="display:none; text-align:center; padding:12px 0 20px;">
+    <button onclick="fullReset()" style="background:transparent; border:1px dashed #ddd; border-radius:10px; padding:8px 18px; font-size:12px; color:#bbb; cursor:pointer;">🔄 처음부터 시작하기 (CBT 전용)</button>
+  </div>
+</div>
+
+<!-- ───── 빠른 실행 팝업 ───── -->
+<div id="quickActionPopup" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+  <div class="popup-content" style="width:100%; max-width:360px; background:#fff; border-radius:28px; box-shadow:0 20px 50px rgba(0,0,0,0.1); border:1px solid rgba(241,128,145,0.1); padding:36px 24px; text-align:center; transform:scale(0.8); opacity:0; transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);">
+    <div style="font-size:24px; margin-bottom:12px;">✨</div>
+    <div style="font-size:19px; font-weight:700; color:#222; margin-bottom:10px; letter-spacing:-0.02em;">어떤 작업을 도와드릴까요?</div>
+    <div style="font-size:13px; color:#999; margin-bottom:32px; line-height:1.5;">사장님의 감각적인 인스타 운영을 위해<br>잇데이가 스마트하게 준비했습니다</div>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <button class="btn-main" style="padding:18px; font-size:15px; background:linear-gradient(135deg,#f18091,#ff9aa8); border-radius:18px; box-shadow:0 4px 15px rgba(241,128,145,0.25); border:none;" onclick="closeQuickAction(); goCaption();">✍️ 인스타 피드 글 작성</button>
+      <button class="btn-main" style="padding:18px; font-size:15px; background:linear-gradient(135deg,#8fa4ff,#a3b4ff); border-radius:18px; box-shadow:0 4px 15px rgba(143,164,255,0.2); border:none;" onclick="closeQuickAction(); showTab('ba', document.querySelectorAll('.nav-btn')[2]);">📸 시술 후 사진 편집</button>
+      <button class="btn-main" style="padding:18px; font-size:15px; background:#f8f8f8; color:#ccc; border-radius:18px; border:none; cursor:not-allowed;" disabled>🎬 영상 편집 가이드 <span style="font-size:10px; opacity:0.6;">(준비중)</span></button>
+    </div>
+    <button onclick="closeQuickAction()" style="margin-top:28px; background:transparent; border:none; color:#bbb; font-size:13px; cursor:pointer; text-decoration:underline; font-weight:500;">나중에 할게요</button>
+  </div>
+</div>
+
+<!-- ===== 피드 글 작성 탭 ===== -->
+<div class="tab" id="tab-caption">
+  <div class="sec-title">피드 글 + 해시태그 생성</div>
+  <div class="sec-sub">내 말투 그대로 AI가 대신 써드려요 🎀</div>
+  <div class="input-card">
+    <label id="typeTagLabel">인치 선택</label>
+    <div class="tag-row" id="typeTags">
+      <span class="tag" data-v="18인치">18인치</span><span class="tag" data-v="20인치">20인치</span><span class="tag" data-v="22인치">22인치</span>
+      <span class="tag on" data-v="24인치">24인치</span><span class="tag" data-v="26인치">26인치</span><span class="tag" data-v="28인치">28인치</span>
+      <span class="tag" data-v="30인치">30인치</span><span class="tag" data-v="특수인치">특수인치</span><span class="tag" data-v="옴브레">옴브레</span><span class="tag" data-v="재시술">재시술</span>
+    </div>
+    <label style="margin-top:10px;">지역</label>
+    <div class="tag-row" id="locTags">
+      <span class="tag on" data-v="수원">수원</span><span class="tag" data-v="강남">강남</span><span class="tag" data-v="동탄">동탄</span>
+    </div>
+    <label style="margin-top:10px;">오늘 어떤 작업을 하셨나요?</label>
+    <textarea id="captionMemo" rows="4" placeholder="키워드만 툭 던져주세요. AI가 찰떡같이 포장해줍니다!&#10;예) 타샵 망함 복구, 매듭 얇게, 고객 엄청 좋아함 ㅋㅋ"></textarea>
+  </div>
+  <button class="btn-main" id="captionBtn" onclick="generateCaption()">피드 글 작성하기 ✨</button>
+  <!-- 인스타 프레임 결과 -->
+  <div class="insta-frame" id="captionResult" style="display:none;">
+    <div class="insta-frame-header">
+      <div class="frame-avatar-ring"><div class="frame-avatar-inner" id="frameAvatarInner"><span id="frameAvatarLetter">잇</span></div></div>
+      <div>
+        <div class="insta-frame-handle" id="frameHandle">@itdasy</div>
+        <div class="insta-frame-meta">방금 · 게시물 미리보기</div>
+      </div>
+    </div>
+    <div class="insta-frame-body">
+      <div class="insta-caption-text" id="captionText"></div>
+      <div class="insta-hashtag-text" id="captionHash"></div>
+    </div>
+    <div class="insta-frame-actions">
+      <button class="frame-action-btn" onclick="copyCaption()">해시태그 빼고 복사</button>
+      <button class="frame-action-btn primary" onclick="copyAll()">전체 복사 📋</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Before/After 탭 ===== -->
+<div class="tab" id="tab-ba">
+  <div class="sec-title">Before / After 합성</div>
+  <div class="sec-sub">두 사진을 나란히 붙여서 인스타용 이미지로 저장해요</div>
+  <div class="video-tip" id="baGuideText" style="margin-bottom:16px;">시술 전후 변화를 극명하게 보여주세요.</div>
+  <div class="ba-grid">
+    <div class="ba-slot">
+      <span class="ba-badge before">BEFORE</span>
+      <div class="upload-area" id="beforeArea"><div class="upload-icon">📷</div><div class="upload-label">시술 전 사진</div><input type="file" accept="image/*" onchange="loadImage(this,'before')"></div>
+      <img class="upload-preview" id="beforePreview">
+    </div>
+    <div class="ba-slot">
+      <span class="ba-badge after">AFTER</span>
+      <div class="upload-area" id="afterArea"><div class="upload-icon">✨</div><div class="upload-label">시술 후 사진</div><input type="file" accept="image/*" onchange="loadImage(this,'after')"></div>
+      <img class="upload-preview" id="afterPreview">
+    </div>
+  </div>
+  <label>레이아웃 스타일</label>
+  <div class="style-opts">
+    <button class="style-opt on" data-v="side">좌우 나란히</button>
+    <button class="style-opt" data-v="top">위아래</button>
+    <button class="style-opt" data-v="square">정사각형</button>
+  </div>
+  <label>워터마크</label>
+  <div class="style-opts">
+    <button class="style-opt on" data-v="wm1">🎀 @itdasy</button>
+    <button class="style-opt" data-v="wm2">잇데이</button>
+    <button class="style-opt" data-v="wm0">없음</button>
+  </div>
+  <button class="btn-main" id="baBtn" onclick="renderBA()">합성 이미지 만들기 📸</button>
+  <canvas id="baCanvas" style="display:none; width:100%; border-radius:12px; margin-top:15px;"></canvas>
+  <div id="publishConfirmArea" style="display:none; margin-top:16px;">
+    <div style="font-size:12px; color:var(--text3); margin-bottom:6px;">📝 올릴 글 (수정 가능)</div>
+    <textarea id="publishCaptionPreview" rows="4" style="width:100%; box-sizing:border-box; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:13px; line-height:1.6; resize:none;"></textarea>
+  </div>
+  <div id="publishArea" style="display:none; margin-top:20px;">
+    <button class="btn-main" id="publishInstaBtn" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#f56040); border:none; box-shadow:0 8px 20px rgba(253,29,29,0.25);" onclick="publishToInstagram()">
+      <span style="font-size:20px; margin-right:8px;">📸</span><span id="publishBtnLabel">피드에 바로 올리기</span>
+    </button>
+    <div style="font-size:11px; color:var(--text3); text-align:center; margin-top:10px;">* 버튼을 누르면 올리기 전 미리보기가 뜹니다.</div>
+  </div>
+  <div style="display:flex; gap:10px; margin-top:10px;">
+    <button class="btn-main" id="saveBtn"    style="display:none; margin-top:0; flex:2; background:linear-gradient(135deg,#2a8a5a,#1a6040);" onclick="saveCanvas()">이미지 저장하기 ⬇</button>
+    <button class="btn-main" id="resetBaBtn" style="display:none; margin-top:0; flex:1; background:#3a2228; border:0.5px solid var(--border);" onclick="resetBA()">새로 시작 ↻</button>
+  </div>
+
+  <div class="card-divider" style="margin-top:24px;"></div>
+  <div class="sec-title" style="font-size:15px; margin-bottom:4px;">잇데이 스타일 자동편집</div>
+  <div class="sec-sub">누끼 자동제거 → 구름배경 합성 → 워터마크 — 원탭 완성 🎀</div>
+  <div class="upload-area" id="editArea"><div class="upload-icon">📷</div><div class="upload-label">인물 사진 올리기</div><input type="file" accept="image/*" onchange="loadEditImage(this)"></div>
+  <img class="upload-preview" id="editPreview" style="width:100%; max-height:200px; object-fit:cover; border-radius:10px; display:none; margin-top:10px;">
+  <div style="height:14px;"></div>
+  <label>배경 스타일</label>
+  <div class="style-opts" id="bgOpts">
+    <button class="style-opt on" data-v="cloud_bw">흑백 구름</button>
+    <button class="style-opt" data-v="cloud_color">컬러 구름</button>
+    <button class="style-opt" data-v="pink">핑크 그라데이션</button>
+    <button class="style-opt" data-v="white">화이트</button>
+  </div>
+  <label>워터마크</label>
+  <div class="style-opts" id="editWmOpts">
+    <button class="style-opt on" data-v="wm1">🎀 @itdasy</button>
+    <button class="style-opt" data-v="wm0">없음</button>
+  </div>
+  <button class="btn-main" id="editBtn" onclick="renderEdit()">누끼따고 구름 합성하기 ✨</button>
+  <div id="editProgress" style="display:none; text-align:center; padding:20px; color:var(--text2); font-size:13px;">
+    <div class="spinner" style="width:20px;height:20px;margin:0 auto 10px;"></div>배경 제거 중... (최대 10초)
+  </div>
+  <canvas id="editCanvas" style="width:100%; border-radius:12px; display:none; margin-top:12px;"></canvas>
+  <div style="display:flex; gap:10px; margin-top:10px;">
+    <button class="btn-main" id="editSaveBtn"  style="display:none; margin-top:0; flex:2; background:linear-gradient(135deg,#2a8a5a,#1a6040);" onclick="saveEdit()">저장하기 ⬇</button>
+    <button class="btn-main" id="resetEditBtn" style="display:none; margin-top:0; flex:1; background:#3a2228; border:0.5px solid var(--border);" onclick="resetEdit()">새로 시작 ↻</button>
+  </div>
+</div>
+
+<!-- ===== 영상 탭 ===== -->
+<div class="tab" id="tab-video">
+  <div class="sec-title">영상 편집 가이드</div>
+  <div class="sec-sub">릴스 / 쇼츠 편집 팁 + AI 자막 스크립트 생성</div>
+  <div class="video-card">
+    <div class="video-card-title">📱 핸드폰 편집 추천 앱</div>
+    <p>CapCut (캡컷) — 무료, 한국어, 자동자막 기능 내장</p>
+    <div class="video-tip">CapCut → 자동 자막 → 한국어 선택 → 영상 올리면 자막 자동 생성 완료!</div>
+  </div>
+  <div class="video-card">
+    <div class="video-card-title">⏱ 릴스 추천 구성 (30초)</div>
+    <p>0~3초: 후킹 — After 결과물 먼저 보여주기<br>3~15초: 시술 과정 하이라이트<br>15~25초: 클로즈업 + 고객 반응<br>25~30초: 로고 + 계정 태그</p>
+    <div class="video-tip">처음 3초에 "이거 붙임머리예요" 자막 넣으면 체류시간 2배↑</div>
+  </div>
+  <div class="card-divider"></div>
+  <div class="sec-title" style="font-size:15px;">AI 자막 스크립트 생성</div>
+  <div class="sec-sub">영상 내용 간단히 입력하면 자막용 스크립트 써줘요</div>
+  <label>영상 내용</label>
+  <textarea id="videoMemo" rows="3" placeholder="예) 30인치 러버 붙임머리 시술 과정, 수원 고객, 블랙컬러, 재방문..."></textarea>
+  <label style="margin-top:14px;">영상 길이</label>
+  <div class="tag-row" id="durTags">
+    <span class="tag on" data-v="15초 릴스">15초</span>
+    <span class="tag" data-v="30초 릴스">30초</span>
+    <span class="tag" data-v="1분 릴스">1분</span>
+  </div>
+  <button class="btn-main" id="scriptBtn" onclick="generateScript()">스크립트 생성하기 🎬</button>
+  <div class="script-result" id="scriptResult"></div>
+  <button class="btn-copy" id="scriptCopyBtn" style="display:none; width:100%; margin-top:10px;" onclick="copyScript()">스크립트 복사</button>
+</div>
+
+<!-- ===== 글로벌 오버레이 & 팝업 ===== -->
+
+<!-- 복사 토스트 -->
+<div class="copy-toast" id="copyToast"></div>
+
+<!-- 인스타 발행 미리보기 팝업 -->
+<div class="popup-overlay" id="publishPreviewPopup" style="display:none; z-index:2500;">
+  <div class="popup-content" style="width:95%; max-width:400px; padding:0; overflow:hidden; border-radius:28px; background:#fff; box-shadow:0 20px 50px rgba(0,0,0,0.1); border:1px solid rgba(241,128,145,0.1); transform:scale(0.8); opacity:0; transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);">
+    <div style="padding:16px 20px; border-bottom:0.5px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+      <div style="font-size:16px; font-weight:800; color:var(--text); letter-spacing:-0.5px;">최종 업로드 확인</div>
+      <button onclick="closePublishPreview()" style="background:none; border:none; font-size:20px; color:var(--text3); cursor:pointer;">&times;</button>
+    </div>
+    <div style="background:white; margin:16px; border-radius:24px; border:1px solid rgba(0,0,0,0.05); box-shadow:0 10px 40px rgba(0,0,0,0.06); overflow:hidden;">
+      <div style="padding:12px 14px; display:flex; align-items:center; gap:8px;">
+        <div id="previewAvatar" style="width:28px; height:28px; border-radius:50%; background:var(--accent-light); overflow:hidden;"></div>
+        <div id="previewShopName" style="font-size:13px; font-weight:700; color:var(--text);">사장님</div>
+      </div>
+      <div style="width:100%; aspect-ratio:1/1; background:#f0f0f0;"><img id="previewFinalImg" style="width:100%; height:100%; object-fit:contain;"></div>
+      <div style="padding:14px;"><div style="font-size:13px; line-height:1.5; color:var(--text); white-space:pre-wrap; word-break:break-all; max-height:120px; overflow-y:auto;" id="previewFinalCaption"></div></div>
+    </div>
+    <div style="padding:0 20px 24px;">
+      <div style="padding:12px; background:rgba(232,160,176,0.08); border-radius:14px; font-size:11px; color:var(--accent2); margin-bottom:16px; text-align:center; font-weight:600;">⚠️ 이대로 사장님 본계정에 바로 올라갑니다!</div>
+      <div style="display:flex; gap:12px;">
+        <button onclick="closePublishPreview()" style="flex:1; padding:16px; border-radius:16px; border:none; background:var(--bg3); color:var(--text2); font-weight:700; cursor:pointer;">취소</button>
+        <button id="doPublishBtn" onclick="doActualPublish()" style="flex:2; padding:16px; border-radius:16px; border:none; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:white; font-weight:800; cursor:pointer;">인스타 바로 올리기 🚀</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 홈화면 추가 안내 모달 -->
+<div id="installGuideModal" style="display:none; position:fixed; inset:0; z-index:9000; background:rgba(255,255,255,0.7); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:20px;">
+  <div id="installGuideCard" style="width:100%; max-width:360px; background:#fff; border-radius:28px; box-shadow:0 20px 50px rgba(0,0,0,0.1); border:1px solid rgba(241,128,145,0.1); padding:36px 28px; text-align:center; transform:scale(0.8); opacity:0; transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);">
+    <div style="font-size:36px; margin-bottom:16px;">📲</div>
+    <div style="font-size:18px; font-weight:800; color:var(--text); margin-bottom:8px;">홈 화면에 추가 후 이용해주세요</div>
+    <div id="installGuideExtra" style="font-size:13px; color:var(--accent); margin-bottom:12px; font-weight:600;"></div>
+    <div style="font-size:13px; color:#888; line-height:1.9; margin-bottom:28px;">인스타그램 연동은 <strong style="color:var(--text);">앱처럼 설치</strong>해야 정상 작동해요.<br><br><span style="font-size:20px;">①</span> Safari 하단 <strong style="color:var(--text);">공유 버튼</strong> 탭 (<span style="font-size:14px;">⎙</span>)<br><span style="font-size:20px;">②</span> <strong style="color:var(--text);">'홈 화면에 추가'</strong> 선택<br><span style="font-size:20px;">③</span> 홈 화면 아이콘으로 실행</div>
+    <button onclick="hideInstallGuide()" style="width:100%; padding:16px; border-radius:16px; border:none; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:15px; font-weight:800;">확인했어요</button>
+  </div>
+</div>
+
+<!-- 캡션 로딩 팝업 -->
+<div id="captionLoadingPopup">
+  <div class="cl-card">
+    <div id="clMsg">원장님 말투 불러오는 중...</div>
+    <div id="clTrack"><span id="clRunner">🏃‍♀️</span><div id="clBarWrap"><div id="clFill"></div></div></div>
+    <div id="clHint">AI가 열심히 달리는 중이에요</div>
+  </div>
+</div>
+
+<!-- 업로드 진행 팝업 -->
+<div id="uploadProgressPopup">
+  <div class="up-card">
+    <div id="upPct">0%</div>
+    <div id="upMsg">이미지 준비 중...</div>
+    <div id="upBarWrap"><div id="upFill"></div></div>
+  </div>
+</div>
+
+<!-- 업로드 완료 팝업 -->
+<div id="uploadDonePopup">
+  <div class="ud-card">
+    <div style="font-size:52px; margin-bottom:16px;">🎀</div>
+    <div style="font-size:20px; font-weight:800; color:var(--text); margin-bottom:8px; letter-spacing:-0.5px;">업로드 완료!</div>
+    <div style="font-size:14px; color:var(--text2); margin-bottom:32px; line-height:1.6;">인스타 피드에 올라갔어요 ✨</div>
+    <button onclick="openInstagramProfile()" style="display:block; width:100%; padding:16px; border-radius:16px; border:none; background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045); color:#fff; font-size:14px; font-weight:800; cursor:pointer; margin-bottom:12px;">인스타 확인하러 가기 →</button>
+    <button onclick="closeUploadDone()" style="display:block; width:100%; padding:14px; border-radius:16px; border:none; background:var(--bg3); color:var(--text2); font-size:14px; font-weight:700; cursor:pointer;">확인</button>
+  </div>
+</div>
+
+<!-- 환영 오버레이 -->
+<div id="welcomeOverlay">
+  <div class="welcome-ribbon">🎀</div>
+  <div class="welcome-name">반갑습니다,<br><span id="welcomeShopName">사장</span>대표님!</div>
+  <div class="welcome-sub">오늘도 잇데이와 함께해요</div>
+  <div class="welcome-dots"><span></span><span></span><span></span></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
