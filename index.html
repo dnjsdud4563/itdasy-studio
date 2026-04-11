@@ -306,8 +306,9 @@
     <div style="font-size:11px; color:var(--text3); text-align:center; margin-top:10px;">* 버튼을 누르면 올리기 전 미리보기가 뜹니다.</div>
   </div>
   <div style="display:flex; gap:10px; margin-top:10px;">
-    <button class="btn-main" id="saveBtn"    style="display:none; margin-top:0; flex:2; background:linear-gradient(135deg,#2a8a5a,#1a6040);" onclick="saveCanvas()">이미지 저장하기 ⬇</button>
-    <button class="btn-main" id="resetBaBtn" style="display:none; margin-top:0; flex:1; background:#3a2228; border:0.5px solid var(--border);" onclick="resetBA()">새로 시작 ↻</button>
+    <button class="btn-main" id="editPhotosBtn" style="display:none; margin-top:0; flex:1; background:var(--bg3); color:var(--text2); border:1px solid var(--border);" onclick="editBAPhotos()">사진 수정</button>
+    <button class="btn-main" id="saveBtn"       style="display:none; margin-top:0; flex:2; background:linear-gradient(135deg,#2a8a5a,#1a6040);" onclick="saveCanvas()">이미지 저장하기</button>
+    <button class="btn-main" id="resetBaBtn"    style="display:none; margin-top:0; flex:1; background:#3a2228; border:0.5px solid var(--border);" onclick="resetBA()">새로 시작</button>
   </div>
 
   <div class="card-divider" style="margin-top:24px;"></div>
@@ -338,24 +339,6 @@
     <button class="btn-main" id="resetEditBtn" style="display:none; margin-top:0; flex:1; background:#3a2228; border:0.5px solid var(--border);" onclick="resetEdit()">새로 시작 ↻</button>
   </div>
 
-  <div class="card-divider" style="margin-top:24px;"></div>
-  <div class="sec-title" style="font-size:15px; margin-bottom:4px;">고객 후기 카드</div>
-  <div class="sec-sub">카톡·DM 후기를 인스타용 리뷰 카드로 만들어요</div>
-  <div class="input-card" style="margin-top:12px;">
-    <label>후기 내용</label>
-    <textarea id="reviewText" rows="4" placeholder="예) 원장님 손이 정말 빠르고 꼼꼼해요! 붙임머리 처음인데 너무 자연스럽게 해주셔서 감동받았어요 ㅠㅠ"></textarea>
-    <label style="margin-top:10px;">고객 닉네임 (선택)</label>
-    <input type="text" id="reviewName" placeholder="예) 20대 직장인 / @hong_0312" maxlength="20" style="width:100%; padding:12px; border:1px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; outline:none; background:var(--bg); color:var(--text); box-sizing:border-box;">
-    <label style="margin-top:10px;">카드 스타일</label>
-    <div class="style-opts" id="reviewStyleOpts">
-      <button class="style-opt on" data-v="pink">핑크</button>
-      <button class="style-opt" data-v="dark">다크</button>
-      <button class="style-opt" data-v="white">화이트</button>
-    </div>
-  </div>
-  <button class="btn-main" id="reviewBtn" onclick="renderReviewCard()">리뷰 카드 만들기</button>
-  <canvas id="reviewCanvas" style="width:100%; border-radius:12px; display:none; margin-top:12px;"></canvas>
-  <button class="btn-main" id="reviewSaveBtn" style="display:none; margin-top:10px; background:linear-gradient(135deg,#2a8a5a,#1a6040);" onclick="saveReviewCard()">이미지 저장하기</button>
 </div>
 
 
