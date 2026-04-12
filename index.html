@@ -337,73 +337,103 @@ textarea:focus, input[type=text]:focus { border-color: var(--accent); }
 .card-divider { height: 1px; background: var(--border); margin: 24px 0; }
 
 /* 홈 탭 */
-.home-hero {
-  text-align: center;
-  padding: 14px 0 8px;
-}
-.home-logo-big {
-  font-family: 'Pretendard', sans-serif;
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--accent);
-  display: block;
-  letter-spacing: -0.05em;
-}
-.home-logo-sub {
-  font-size: 11px;
-  color: var(--text3);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  display: block;
-  margin-bottom: 24px;
-  font-weight: 500;
-}
-.home-desc {
-  font-size: 14px;
-  color: var(--text2);
-  line-height: 1.8;
-  margin-bottom: 28px;
-}
-.home-cards { display: flex; flex-direction: column; gap: 12px; }
+/* ───── 홈 카드 시스템 ───── */
+.hc-section { display: flex; flex-direction: column; gap: 16px; padding: 20px 20px 100px; }
 
-/* ───── 원형 메인 버튼 ───── */
-.home-btn-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 12px 0 28px;
+/* STEP 1 연동 카드 */
+.hc-step1 {
+  background: linear-gradient(135deg, #FFF0F3, #FFE4EA);
+  border: 1.5px solid rgba(241,128,145,0.25);
+  border-radius: 24px;
+  padding: 28px 24px;
 }
-.btn-round-main {
-  width: 200px; height: 200px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #F18091, #D95F70);
-  box-shadow: 0 12px 40px rgba(241,128,145,0.4);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+.hc-step-label {
+  font-size: 10px; font-weight: 700; color: #F18091;
+  letter-spacing: 0.14em; margin-bottom: 10px;
+}
+.hc-title {
+  font-size: 20px; font-weight: 800; color: var(--text);
+  letter-spacing: -0.04em; margin-bottom: 8px;
+}
+.hc-desc {
+  font-size: 13px; color: var(--text3); line-height: 1.65; margin-bottom: 24px;
+}
+.hc-btn-primary {
+  width: 100%; height: 52px; background: #F18091; color: #fff;
+  border: none; border-radius: 16px; font-size: 15px; font-weight: 700;
+  cursor: pointer; letter-spacing: -0.02em;
+  transition: transform 0.1s, opacity 0.1s;
   touch-action: manipulation;
-  -webkit-user-select: none; user-select: none;
 }
-.btn-round-main:active {
-  transform: scale(0.96);
-  box-shadow: 0 6px 22px rgba(241,128,145,0.35);
+.hc-btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+.hc-btn-ghost {
+  margin-top: 14px; width: 100%; background: transparent; border: none;
+  font-size: 13px; color: var(--text3); cursor: pointer;
+  text-decoration: underline; padding: 4px 0;
 }
-.btn-round-sub {
-  font-size: 14px; font-weight: 500;
-  color: rgba(255,255,255,0.8);
-  font-family: 'Pretendard', sans-serif;
-  letter-spacing: -0.02em;
+
+/* 미리보기 샘플 카드 */
+.hc-preview {
+  background: #fff; border-radius: 20px;
+  border: 1px solid var(--border);
+  padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
-.btn-round-label {
-  font-size: 17px; font-weight: 700;
-  color: #fff;
-  font-family: 'Pretendard', sans-serif;
-  letter-spacing: -0.03em;
+.hc-preview-label {
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  letter-spacing: 0.08em; margin-bottom: 12px;
 }
+.hc-preview-text {
+  font-size: 13px; color: var(--text2); line-height: 1.8;
+}
+.hc-preview-hash {
+  margin-top: 10px; font-size: 11px; color: var(--accent2); line-height: 1.7;
+}
+
+/* 메인 CTA 카드 (연동 후) */
+.hc-main-cta {
+  background: linear-gradient(135deg, #F18091, #D95F70);
+  border-radius: 24px; padding: 28px 24px;
+  display: flex; align-items: center; gap: 16px;
+  cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 8px 28px rgba(241,128,145,0.35);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.hc-main-cta:active { transform: scale(0.985); box-shadow: 0 4px 16px rgba(241,128,145,0.3); }
+.hc-cta-eyebrow {
+  font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7);
+  letter-spacing: 0.06em; margin-bottom: 6px;
+}
+.hc-cta-title {
+  font-size: 22px; font-weight: 800; color: #fff;
+  letter-spacing: -0.04em; margin-bottom: 6px;
+}
+.hc-cta-sub {
+  font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.5;
+}
+
+/* 말투 카드 (연동 후) */
+#personaDash {
+  background: #fff; border-radius: 20px;
+  border: 1px solid var(--border);
+  padding: 22px 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.pd-title {
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  letter-spacing: 0.08em; margin-bottom: 14px;
+}
+
+/* PWA 설치 카드 */
+.hc-pwa {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 20px; padding: 18px 20px;
+  display: flex; align-items: center; gap: 14px;
+}
+.hc-pwa-icon { font-size: 28px; flex-shrink: 0; }
+.hc-pwa-text { font-size: 13px; color: var(--text2); line-height: 1.65; }
+.hc-pwa-text strong { color: var(--accent); font-weight: 700; }
+
+.home-cards { display: flex; flex-direction: column; gap: 12px; }
 .home-card {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -422,18 +452,6 @@ textarea:focus, input[type=text]:focus { border-color: var(--accent); }
 .home-card-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
 .home-card-arrow { margin-left: auto; color: var(--text3); font-size: 18px; flex-shrink: 0; }
 
-.install-banner {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 16px 18px;
-  margin-top: 24px;
-  font-size: 13px;
-  color: var(--text2);
-  line-height: 1.7;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
-}
-.install-banner strong { color: var(--accent); font-weight: 600; }
 
 /* 인스타 연동 카드 */
 .insta-connect-card {
@@ -1425,32 +1443,27 @@ body.splashing > *:not(#splashScreen) {
 <!-- 홈 탭 -->
 <div class="tab active" id="tab-home">
 
-  <!-- 1. 로고 (작게) -->
-  <div class="home-hero">
-    <span class="home-logo-big">잇데이</span>
-  </div>
+  <!-- ── 연동 전 상태 ── -->
+  <div id="homePreConnect" class="hc-section">
 
-  <!-- 2. 3초 원형 버튼 -->
-  <div class="home-btn-wrap">
-    <button class="btn-round-main" onclick="openQuickAction()">
-      <span class="btn-round-sub">3초 만에</span>
-      <span class="btn-round-label">피드 글 만들기</span>
-    </button>
-  </div>
+    <!-- STEP 1: 인스타 연동 카드 -->
+    <div class="hc-step1">
+      <div class="hc-step-label">STEP 1</div>
+      <div class="hc-title">인스타 계정 연동</div>
+      <div class="hc-desc">내 말투를 학습해서<br>피드를 자동으로 써드려요</div>
+      <button class="hc-btn-primary" onclick="connectInstagram()">연동하고 시작하기</button>
+      <button class="hc-btn-ghost" onclick="openQuickAction()">연동 없이 둘러보기</button>
+    </div>
 
-  <!-- 3. 내 말투 학습 결과 / 인스타 연동 카드 -->
-  <div class="insta-connect-card" id="instaCard">
-    <!-- 미연동 상태 -->
-    <div id="instaConnectRow" style="display:flex; align-items:center; gap:12px;">
-      <div style="flex:1;">
-        <div style="font-size:13px; font-weight:600; color:var(--text2); margin-bottom:2px;">인스타 계정 연동</div>
-        <div style="font-size:12px; color:var(--text3); line-height:1.5;" id="instaStatusText">연동하면 내 말투로 피드 글 자동 생성</div>
-      </div>
-      <button class="btn-insta" id="instaBtn" onclick="connectInstagram()">연동하기</button>
+    <!-- 미리보기 샘플 카드 -->
+    <div class="hc-preview">
+      <div class="hc-preview-label">이런 글이 생성돼요</div>
+      <div class="hc-preview-text">"오늘 붙임 손님 타샵 망한 거 복구했는데 결 진짜 미쳤다 ㅋㅋ 본인도 너무 만족하셔서 바로 재예약🤍"</div>
+      <div class="hc-preview-hash">#붙임머리 #붙임머리전문 #자연스러운붙임머리</div>
     </div>
 
     <!-- 개인정보활용동의 -->
-    <div id="privacyConsentWrap" style="margin-top:10px; font-size:11px; color:var(--text3); display:flex; flex-direction:column;">
+    <div id="privacyConsentWrap" style="font-size:11px; color:var(--text3);">
       <div style="display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="(function(){const b=document.getElementById('consentBody');const arr=document.getElementById('consentArrow');if(b.style.display==='none'){b.style.display='block';arr.textContent='▲';}else{b.style.display='none';arr.textContent='▼';}})()">
         <span id="consentArrow" style="font-size:9px; color:var(--accent2);">▼</span>
         <span id="consentTimestampDisplay" style="color:var(--accent2); font-size:10px; display:none;"></span>
@@ -1462,14 +1475,49 @@ body.splashing > *:not(#splashScreen) {
       </div>
     </div>
 
-    <!-- 연동 후: 말투 학습 결과 -->
-    <div id="personaDash" style="display:none;">
-      <div style="font-size:13px; font-weight:700; color:var(--text2); margin-bottom:12px; letter-spacing:-0.02em;">내 말투 학습 결과</div>
-      <div id="personaContent"></div>
+    <!-- JS 호환용 숨김 요소 (checkInstaStatus에서 참조) -->
+    <div id="instaConnectRow" style="display:none;">
+      <div style="flex:1;"><span id="instaStatusText"></span></div>
+      <button id="instaBtn" onclick="connectInstagram()">연동하기</button>
     </div>
+
   </div>
 
+  <!-- ── 연동 후 상태 ── -->
+  <div id="homePostConnect" class="hc-section" style="display:none;">
 
+    <!-- 메인 CTA 카드 -->
+    <div class="hc-main-cta" onclick="openQuickAction()">
+      <div style="flex:1;">
+        <div class="hc-cta-eyebrow">내 말투 피드 글 생성</div>
+        <div class="hc-cta-title">피드 글 만들기</div>
+        <div class="hc-cta-sub">말투 분석 완료 · 바로 시작하세요</div>
+      </div>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </div>
+
+    <!-- 말투 학습 결과 카드 -->
+    <div id="personaDash" style="display:none;">
+      <div id="personaContent"></div>
+    </div>
+
+    <!-- PWA 설치 카드 (비PWA 시만 표시) -->
+    <div class="hc-pwa" id="pwaInstallCard">
+      <div class="hc-pwa-icon">📲</div>
+      <div class="hc-pwa-text">
+        <strong>앱으로 설치하면 더 빨라요</strong><br>
+        Safari → 공유 → "홈 화면에 추가"
+      </div>
+    </div>
+
+    <!-- CBT1 전용 리셋 -->
+    <div id="cbt1ResetArea" style="display:none; text-align:center; padding:4px 0;">
+      <button onclick="fullReset()" style="background:transparent; border:1px dashed #ddd; border-radius:10px; padding:8px 18px; font-size:12px; color:#bbb; cursor:pointer;">🔄 처음부터 시작하기 (CBT 전용)</button>
+    </div>
+
+  </div>
 
   <!-- homeQuestion: JS 참조용 숨김 -->
   <span id="homeQuestion" style="display:none;"></span>
@@ -1486,15 +1534,13 @@ body.splashing > *:not(#splashScreen) {
     </div>
   </div>
 
-  <!-- 말투 분석 결과 팝업 (프리미엄 화이트 테마) -->
+  <!-- 말투 분석 결과 팝업 -->
   <div id="analyzeResultPopup" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:9999; overflow-y:auto; padding:24px 20px;">
     <div class="animate-popup-in" style="max-width:420px; margin:40px auto; background:#fff; border-radius:28px; box-shadow:0 20px 50px rgba(0,0,0,0.1); border:1px solid rgba(241,128,145,0.15); padding:32px; position:relative;">
       <div style="text-align:center; font-size:32px; margin-bottom:12px;">💌</div>
       <div style="text-align:center; font-size:20px; font-weight:800; color:var(--text); letter-spacing:-0.5px; margin-bottom:8px;">사장님만의 말투를 담았어요</div>
       <div style="text-align:center; font-size:13px; color:var(--text3); margin-bottom:28px;">AI가 정성스레 분석한 대표님의 성공 공식입니다.</div>
-      
       <div id="analyzeResultBody"></div>
-      
       <button onclick="document.getElementById('analyzeResultPopup').style.display='none'" style="margin-top:30px; width:100%; height:54px; border-radius:16px; border:none; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:15px; font-weight:800; cursor:pointer; box-shadow:0 8px 24px rgba(232,160,176,0.3);">확인했습니다</button>
     </div>
   </div>
@@ -1509,15 +1555,6 @@ body.splashing > *:not(#splashScreen) {
     }
   </style>
 
-  <div class="install-banner">
-    <strong>앱으로 설치하기</strong><br>
-    Safari → 공유버튼 → "홈 화면에 추가" 탭하면<br>앱 아이콘으로 설치돼요 🎀
-  </div>
-
-  <!-- CBT1 전용 리셋 버튼 -->
-  <div id="cbt1ResetArea" style="display:none; text-align:center; padding:12px 0 20px;">
-    <button onclick="fullReset()" style="background:transparent; border:1px dashed #ddd; border-radius:10px; padding:8px 18px; font-size:12px; color:#bbb; cursor:pointer;">🔄 처음부터 시작하기 (CBT 전용)</button>
-  </div>
 </div>
 
 <!-- 작업 선택 팝업 (라이트 테마 / 감각적인 효과) -->
@@ -2538,29 +2575,17 @@ async function checkInstaStatus(fromLogin = false) {
       showWelcome(data.shop_name);
     }
 
-    const btn = document.getElementById('instaBtn');
-    const connectRow = document.getElementById('instaConnectRow');
     if (data.connected) {
-      // 연동 완료: 연동 행 숨기고 말투 카드만 표시
-      if (connectRow) connectRow.style.display = 'none';
-      document.getElementById('privacyConsentWrap').style.display = 'none';
+      document.getElementById('homePreConnect').style.display = 'none';
+      document.getElementById('homePostConnect').style.display = 'flex';
       _instaHandle = data.handle || '';
       updateHeaderProfile(_instaHandle, data.persona ? data.persona.tone : null, data.profile_picture_url || '');
-      // 실제 분석 완료된 경우에만 말투 카드 표시 (초기화 후 기본값이면 숨김)
+      // 실제 분석 완료된 경우에만 말투 카드 표시
       if (data.persona && data.persona.style_summary) renderPersonaDash(data.persona);
       else document.getElementById('personaDash').style.display = 'none';
     } else {
-      if (connectRow) connectRow.style.display = 'flex';
-      if (btn) {
-        btn.style.display = '';
-        btn.textContent = '연동하기';
-        btn.className = 'btn-insta';
-        btn.style.background = 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)';
-        btn.style.border = 'none';
-        btn.onclick = connectInstagram;
-      }
-      document.getElementById('privacyConsentWrap').style.display = 'flex';
-      document.getElementById('personaDash').style.display = 'none';
+      document.getElementById('homePreConnect').style.display = 'flex';
+      document.getElementById('homePostConnect').style.display = 'none';
     }
   } catch(e) {}
 }
@@ -4710,6 +4735,13 @@ document.addEventListener('DOMContentLoaded', () => {
   ['beforeArea', 'afterArea', 'editArea', 'portfolioUploadArea'].forEach(id => {
     initLongPressUpload(id, 'input[type=file]');
   });
+
+  // PWA 설치 완료 시 설치 카드 숨기기
+  const isPWA = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (isPWA) {
+    const card = document.getElementById('pwaInstallCard');
+    if (card) card.style.display = 'none';
+  }
 });
 
 // =====================================================================
