@@ -2381,6 +2381,9 @@ async function fullReset() {
     const res = await fetch(API + '/admin/reset', { method: 'POST', headers: authHeader() });
     if (!res.ok) throw new Error('초기화 실패');
     ['itdasy_token','itdasy_consented','itdasy_consented_at','itdasy_latest_analysis','onboarding_done','shop_name','shop_type','itdasy_master_set'].forEach(k => localStorage.removeItem(k));
+    // 말투 카드 즉시 숨기기
+    const pd = document.getElementById('personaDash');
+    if (pd) { pd.style.display = 'none'; const pc = document.getElementById('personaContent'); if (pc) pc.innerHTML = ''; }
     alert('초기화 완료! 처음부터 시작합니다.');
     location.reload();
   } catch(e) {
@@ -2560,7 +2563,7 @@ async function checkInstaStatus(fromLogin = false) {
   } catch(e) {}
 }
 
-function renderPersonaDash(p) {
+function renderPersonaDash(p, showTestBtn) {
   document.getElementById('personaDash').style.display = 'block';
   const content = document.getElementById('personaContent');
   if (content) {
@@ -2569,8 +2572,9 @@ function renderPersonaDash(p) {
         <div style="margin-bottom:8px; font-size:11px; color:var(--accent2); font-weight:700; letter-spacing:-0.2px;">💬 말투 요약</div>
         <div style="font-size:13px; color:var(--text); line-height:1.6; font-weight:500;">"${p.tone || '친근하고 공손한 말투'}"</div>
       </div>
-      
+
       <div style="display:flex; flex-direction:column; gap:8px;">
+        ${showTestBtn ? `<button class="btn-primary" style="width:100%; height:44px; font-size:13px; font-weight:700;" onclick="showOnboardingCaptionPopup()">✍️ 내 말투로 테스트 글 만들기</button>` : ''}
         <button class="btn-copy" style="width:100%; height:42px; font-size:13px; font-weight:600; border:1px solid var(--accent2); background:white; color:var(--accent2); border-radius:10px;" onclick="showDetailedAnalysis()">📋 전체 분석 리포트 확인</button>
       </div>
     `;
@@ -2709,11 +2713,10 @@ async function runPersonaAnalyze() {
     updateHeaderProfile(_instaHandle, p.tone, curPic);
     renderPersonaDash(p);
 
-    setTimeout(async () => {
+    setTimeout(() => {
       overlay.style.display = 'none';
-
-      // 분석 완료마다 온보딩 캡션 테스트 팝업 노출 (재분석 시에도 갱신)
-      await showOnboardingCaptionPopup();
+      // 분석 완료 후 말투 카드에 테스트 글 버튼을 보여줌 (자동 팝업 없음)
+      renderPersonaDash(p, true);
     }, 800);
 
   } catch(e) {
@@ -2860,12 +2863,13 @@ function getSel(id) {
 
 // ===== 캡션 로딩 팝업 (슬롯머신) =====
 const SLOT_KEYWORDS = [
-  ['붙임머리','네일아트','볼륨매직','퍼머','하이라이트','컬러링','매직','그라데이션','슬림핏','복구시술'],
-  ['수원','자연스러운','청량한','화사한','트렌디한','봄감성','여름느낌','가을톤','러블리','감성적인'],
-  ['신규고객','변신완성','극찬후기','강추','카리나급','찐후기','완전만족','완벽복구','재방문','또올게요'],
+  ['따뜻한','친근한','유머러스','전문적인','감성적인','활발한','차분한','트렌디한','포근한','자연스러운'],
+  ['짧게','보통','길게','핵심만','상세하게','간결하게','풍부하게','딱맞게','깔끔하게','진심으로'],
+  ['✨','🎀','💕','🌸','😊','💫','🔥','🌿','💗','🙏'],
 ];
 let _slotTimers = [];
 let _slotLocked = [false, false, false];
+let _personaFinalWords = ['자연스러운', '보통', '✨'];
 
 function _initSlotStrip(idx) {
   const strip = document.getElementById('slotStrip' + idx);
@@ -2911,6 +2915,12 @@ function _lockReel(idx, keyword) {
     lockEl.textContent = keyword;
     lockEl.classList.add('active');
   }
+  // 슬롯 윈도우 숨겨서 글자 겹침 방지
+  const stripEl = document.getElementById('slotStrip' + idx);
+  if (stripEl) {
+    const winEl = stripEl.closest('.slot-window');
+    if (winEl) winEl.style.visibility = 'hidden';
+  }
 }
 
 function showCaptionLoader() {
@@ -2919,9 +2929,25 @@ function showCaptionLoader() {
   _slotLocked = [false, false, false];
   _slotTimers.forEach(t => { clearInterval(t); clearTimeout(t); });
   _slotTimers = [];
+
+  // 페르소나 데이터로 최종 잠금 키워드 설정
+  const raw = JSON.parse(localStorage.getItem('itdasy_latest_analysis') || '{}');
+  const avgLen = parseInt(raw.avg_caption_length) || 0;
+  const lenWord = avgLen > 0 ? (avgLen < 50 ? '짧게' : avgLen > 120 ? '길게' : '보통') : '보통';
+  const emojiMatch = (raw.emojis || '').match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u);
+  const emojiWord = emojiMatch ? emojiMatch[0] : '✨';
+  const toneWord = (raw.tone_summary || raw.tone || '').replace(/["']/g, '').trim().split(/[\s,·]+/)[0] || '자연스러운';
+  _personaFinalWords = [toneWord, lenWord, emojiWord];
+
   [0,1,2].forEach(i => {
     const lock = document.getElementById('slotLock' + i);
     if (lock) lock.classList.remove('active');
+    // 슬롯 윈도우 다시 표시
+    const stripEl = document.getElementById('slotStrip' + i);
+    if (stripEl) {
+      const winEl = stripEl.closest('.slot-window');
+      if (winEl) winEl.style.visibility = '';
+    }
     _initSlotStrip(i);
     setTimeout(() => _spinReel(i), i * 120);
   });
@@ -2937,11 +2963,11 @@ function showCaptionLoader() {
   }, 1600);
   _slotTimers.push(_clMsgTimer);
 
-  // 로딩 중 릴 순차 자동 잠금 (2s, 4s, 6s — API 응답 전 단계적으로 맞춰지는 효과)
+  // 로딩 중 릴 순차 자동 잠금 — 페르소나 키워드로 맞춰지는 효과
   const _autoLockWords = [
-    SLOT_KEYWORDS[0][Math.floor(Math.random() * SLOT_KEYWORDS[0].length)],
-    SLOT_KEYWORDS[1][Math.floor(Math.random() * SLOT_KEYWORDS[1].length)],
-    SLOT_KEYWORDS[2][Math.floor(Math.random() * SLOT_KEYWORDS[2].length)],
+    _personaFinalWords[0] || SLOT_KEYWORDS[0][Math.floor(Math.random() * SLOT_KEYWORDS[0].length)],
+    _personaFinalWords[1] || SLOT_KEYWORDS[1][Math.floor(Math.random() * SLOT_KEYWORDS[1].length)],
+    _personaFinalWords[2] || SLOT_KEYWORDS[2][Math.floor(Math.random() * SLOT_KEYWORDS[2].length)],
   ];
   _slotTimers.push(setTimeout(() => { if (!_slotLocked[0]) _lockReel(0, _autoLockWords[0]); }, 2200));
   _slotTimers.push(setTimeout(() => { if (!_slotLocked[1]) _lockReel(1, _autoLockWords[1]); }, 4400));
@@ -2949,11 +2975,11 @@ function showCaptionLoader() {
 }
 
 function hideCaptionLoader(success, onClose) {
-  // 아직 안 잠긴 릴만 순차 잠금 (250ms 간격)
+  // 아직 안 잠긴 릴만 순차 잠금 (250ms 간격) — 페르소나 기반 최종 키워드 사용
   const finalWords = [
-    SLOT_KEYWORDS[0][Math.floor(Math.random() * SLOT_KEYWORDS[0].length)],
-    SLOT_KEYWORDS[1][Math.floor(Math.random() * SLOT_KEYWORDS[1].length)],
-    SLOT_KEYWORDS[2][Math.floor(Math.random() * SLOT_KEYWORDS[2].length)],
+    _personaFinalWords[0] || SLOT_KEYWORDS[0][Math.floor(Math.random() * SLOT_KEYWORDS[0].length)],
+    _personaFinalWords[1] || SLOT_KEYWORDS[1][Math.floor(Math.random() * SLOT_KEYWORDS[1].length)],
+    _personaFinalWords[2] || SLOT_KEYWORDS[2][Math.floor(Math.random() * SLOT_KEYWORDS[2].length)],
   ];
   let lastLockDelay = 0;
   [0, 1, 2].forEach(i => {
@@ -2999,7 +3025,7 @@ async function showOnboardingCaptionPopup() {
     });
     if (res.ok) {
       const d = await res.json();
-      ta.value = d.caption.trim() + '\n\n' + (d.hashtags || []).map(h => '#' + h.replace(/^#/, '')).join(' ');
+      ta.value = d.caption.trim();
     } else {
       ta.value = '직접 평소 쓰시는 말투로 한 문단 입력해주시면 학습할게요!';
     }
@@ -4996,14 +5022,17 @@ const _origGenerateCaptionEnd = window.generateCaption;
     <div id="clMsg">원장님 말투로 조합 중...</div>
     <div class="slot-machine">
       <div class="slot-reel">
+        <div style="font-size:9px; color:var(--text3); text-align:center; margin-bottom:3px; font-weight:600;">말투느낌</div>
         <div class="slot-window"><div class="slot-strip" id="slotStrip0"></div></div>
         <div class="slot-locked" id="slotLock0"></div>
       </div>
       <div class="slot-reel">
+        <div style="font-size:9px; color:var(--text3); text-align:center; margin-bottom:3px; font-weight:600;">글자수</div>
         <div class="slot-window"><div class="slot-strip" id="slotStrip1"></div></div>
         <div class="slot-locked" id="slotLock1"></div>
       </div>
       <div class="slot-reel">
+        <div style="font-size:9px; color:var(--text3); text-align:center; margin-bottom:3px; font-weight:600;">자주쓰는이모지</div>
         <div class="slot-window"><div class="slot-strip" id="slotStrip2"></div></div>
         <div class="slot-locked" id="slotLock2"></div>
       </div>
