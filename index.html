@@ -1296,7 +1296,7 @@ body.splashing > *:not(#splashScreen) {
   <input type="password" class="login-input" id="loginPassword" placeholder="비밀번호" autocomplete="current-password">
   <div class="login-error" id="loginError"></div>
   <button class="pin-btn" id="loginBtn" onclick="login()">로그인</button>
-  <a href="app.html" style="display:block; margin-top:24px; font-size:13px; color:var(--text3); text-decoration:none;">홈으로 돌아가기</a>
+  <a href="index.html" style="display:block; margin-top:24px; font-size:13px; color:var(--text3); text-decoration:none;">홈으로 돌아가기</a>
 </div>
 
 <!-- ───── 온보딩 오버레이 ───── -->
@@ -2415,7 +2415,7 @@ async function logout() {
   }
   
   // 3. 페이지 새로고침 (클린 캐시 상태로 진입)
-  location.href = 'app.html'; // 아예 홈으로 보냄
+  location.href = 'index.html'; // 아예 홈으로 보냄
 }
 
 
@@ -2789,9 +2789,9 @@ async function connectInstagram() {
     const token = getToken();
     let baseOrigin = window.location.origin;
     if (baseOrigin === 'null' || baseOrigin === 'file://') {
-      baseOrigin = window.location.href.split('/app.html')[0];
+      baseOrigin = window.location.href.split('/index.html')[0];
     } else {
-      baseOrigin += window.location.pathname.replace(/\/app\.html$/, '');
+      baseOrigin += window.location.pathname.replace(/\/index\.html$/, '');
     }
     const origin = encodeURIComponent(baseOrigin);
     window.location.href = `${API}/instagram/go?token=${encodeURIComponent(token)}&origin=${origin}`;
