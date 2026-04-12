@@ -1556,13 +1556,6 @@ body.splashing > *:not(#splashScreen) {
       <span class="tag" data-v="재시술">재시술</span>
     </div>
 
-    <label style="margin-top:10px;">지역</label>
-    <div class="tag-row" id="locTags">
-      <span class="tag on" data-v="수원">수원</span>
-      <span class="tag" data-v="강남">강남</span>
-      <span class="tag" data-v="동탄">동탄</span>
-    </div>
-
     <label style="margin-top:10px;">오늘 어떤 작업을 하셨나요?</label>
     <textarea id="captionMemo" rows="4"
       placeholder="키워드만 툭 던져주세요. AI가 찰떡같이 포장해줍니다!&#10;예) 타샵 망함 복구, 매듭 얇게, 고객 엄청 좋아함 ㅋㅋ"></textarea>
@@ -1628,8 +1621,10 @@ body.splashing > *:not(#splashScreen) {
           <div style="position:absolute; top:50%; left:4px; right:4px; height:3px; background:var(--border); border-radius:2px; transform:translateY(-50%); pointer-events:none;"></div>
           <div id="lengthTrackFill" style="position:absolute; top:50%; left:4px; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:2px; transform:translateY(-50%); pointer-events:none; transition:width 0.15s;"></div>
           <input type="range" id="lengthSlider" min="0" max="100" step="1" value="50"
-            style="width:100%; -webkit-appearance:none; appearance:none; background:transparent; cursor:pointer; position:relative; z-index:1; margin:0; height:24px;"
-            oninput="onLengthSlider(this.value)">
+            style="width:100%; -webkit-appearance:none; appearance:none; background:transparent; cursor:pointer; position:relative; z-index:1; margin:0; height:24px; touch-action:none;"
+            oninput="onLengthSlider(this.value)"
+            ontouchstart="event.stopPropagation()"
+            ontouchmove="event.stopPropagation()">
         </div>
         <div style="display:flex; justify-content:space-between; margin-top:4px; padding:0 4px;">
           <span style="font-size:9px; color:var(--text3);">짧게</span>
@@ -2833,7 +2828,6 @@ function initMulti(id) {
 }
 
 initSingle('typeTags');
-initSingle('locTags');
 document.querySelectorAll('.style-opts').forEach(g => {
   g.querySelectorAll('.style-opt').forEach(t => {
     t.addEventListener('click', () => {
@@ -2984,10 +2978,13 @@ async function showOnboardingCaptionPopup() {
   const ta = document.getElementById('ocpTextarea');
 
   // 팝업을 먼저 열고, 생성 중 상태로 표시
-  ta.value = '테스트 캡션 생성 중...';
+  const loadingMsgs = ['AI가 말투를 분석하고 있어요...✨', '게시물 스타일 학습 중...🎀', '캡션 초안 작성 중...📝', '거의 다 됐어요!💫'];
+  let msgIdx = 0;
+  ta.value = loadingMsgs[0];
   ta.readOnly = true;
   ta.style.opacity = '0.5';
   popup.style.display = 'flex';
+  const loadingTimer = setInterval(() => { msgIdx = (msgIdx + 1) % loadingMsgs.length; ta.value = loadingMsgs[msgIdx]; }, 2000);
 
   // 저장 버튼도 비활성화
   const saveBtn = popup.querySelector('.ocp-save');
@@ -3009,6 +3006,7 @@ async function showOnboardingCaptionPopup() {
   } catch(e) {
     ta.value = '직접 평소 쓰시는 말투로 한 문단 입력해주시면 학습할게요!';
   } finally {
+    clearInterval(loadingTimer);
     ta.readOnly = false;
     ta.style.opacity = '1';
     if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
@@ -3241,7 +3239,7 @@ async function toggleCaptionPortfolioPicker() {
 // ===== 캡션 생성 =====
 async function generateCaption() {
   const types = getSel('typeTags');
-  const loc = getSel('locTags')[0] || '수원';
+
   const memo = document.getElementById('captionMemo').value;
   const btn = document.getElementById('captionBtn');
   btn.disabled = true;
@@ -3257,7 +3255,7 @@ async function generateCaption() {
     _captionPhotos.before?.tags ? '(시술 전: ' + _captionPhotos.before.tags + ')' : '',
     _captionPhotos.after?.tags ? '(시술 후: ' + _captionPhotos.after.tags + ')' : '',
   ].filter(Boolean).join(' ');
-  const description = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 지역: ${loc}. 업종: ${shopType}. ${photoTags} ${memo || ''}`;
+  const description = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 업종: ${shopType}. ${photoTags} ${memo || ''}`;
 
   try {
     const res = await fetch(API + '/caption/generate', {
