@@ -2406,9 +2406,6 @@ async function logout() {
   setToken(null);
   // 세션 관련 키만 삭제 (온보딩 등 설정 유지)
   ['itdasy_token', 'itdasy_consented', 'itdasy_consented_at', 'itdasy_latest_analysis'].forEach(k => localStorage.removeItem(k));
-  // 말투 카드 즉시 숨기기
-  const _pd = document.getElementById('personaDash');
-  if (_pd) { _pd.style.display = 'none'; const _pc = document.getElementById('personaContent'); if (_pc) _pc.innerHTML = ''; }
   
   // 2. 서비스 워커 캐시 강제 삭제
   if ('caches' in window) {
