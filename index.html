@@ -2053,9 +2053,13 @@ body.splashing > *:not(#splashScreen) {
 
 <script>
 // ===== 백엔드 설정 =====
-const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:8001'
-  : 'https://apsidal-vance-rateable.ngrok-free.dev';
+const _API_MAP = {
+  'dnjsdud4563.github.io': 'https://apsidal-vance-rateable.ngrok-free.dev',     // 원영
+  'nopo-lab.github.io':    'https://subdued-crummiest-unmanaged.ngrok-free.dev', // 연준
+};
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:8000'
+  : (_API_MAP[window.location.hostname] || 'https://apsidal-vance-rateable.ngrok-free.dev');
 
 let _instaHandle = '';  // checkInstaStatus에서 저장
 
