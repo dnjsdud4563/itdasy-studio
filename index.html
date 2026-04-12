@@ -1286,7 +1286,7 @@ body.splashing > *:not(#splashScreen) {
   
   <!-- 서비스 설명 (홈에서 이동) -->
   <div style="margin:24px 0; text-align:center;">
-    <div style="font-size:18px; font-weight:800; color:var(--text); line-height:1.4; letter-spacing:-0.5px;">캡션 생성부터<br>사진 편집, 인스타 발행까지</div>
+    <div style="font-size:18px; font-weight:800; color:var(--text); line-height:1.4; letter-spacing:-0.5px;">피드 글 작성부터<br>사진 편집, 인스타 발행까지</div>
     <div style="margin-top:8px; font-size:15px; font-weight:700; color:var(--accent2);">핸드폰 하나로 끝.</div>
     <div style="margin-top:12px; font-size:12px; color:var(--text3); font-weight:500;">"사장님의 시간을 아껴, 매출을 잇습니다."</div>
   </div>
@@ -1345,7 +1345,7 @@ body.splashing > *:not(#splashScreen) {
   <div class="ob-step" id="ob-step-3">
     <div class="ob-emoji">🏪</div>
     <div class="ob-title">샵 이름이<br>어떻게 되세요?</div>
-    <div class="ob-sub" style="margin-bottom:20px;">캡션에 자동으로 반영돼요</div>
+    <div class="ob-sub" style="margin-bottom:20px;">글에 자동으로 반영돼요</div>
     <div class="ob-underline-wrap">
       <input class="ob-underline-input" id="obShopNameInput"
              type="text" placeholder="예) 잇데이 붙임머리"
@@ -1444,7 +1444,7 @@ body.splashing > *:not(#splashScreen) {
     <div id="instaConnectRow" style="display:flex; align-items:center; gap:12px;">
       <div style="flex:1;">
         <div style="font-size:13px; font-weight:600; color:var(--text2); margin-bottom:2px;">인스타 계정 연동</div>
-        <div style="font-size:12px; color:var(--text3); line-height:1.5;" id="instaStatusText">연동하면 내 말투로 자동 캡션 생성</div>
+        <div style="font-size:12px; color:var(--text3); line-height:1.5;" id="instaStatusText">연동하면 내 말투로 피드 글 자동 생성</div>
       </div>
       <button class="btn-insta" id="instaBtn" onclick="connectInstagram()">연동하기</button>
     </div>
@@ -1608,7 +1608,7 @@ body.splashing > *:not(#splashScreen) {
 
   <!-- 90:10 톤 컨트롤러 -->
   <div id="toneController" style="margin-top:12px; background:rgba(241,128,145,0.04); border:1px solid rgba(241,128,145,0.12); border-radius:16px; padding:14px 16px; display:none;">
-    <div style="font-size:11px; font-weight:700; color:var(--text3); letter-spacing:0.03em; margin-bottom:12px;">캡션 스타일 조정</div>
+    <div style="font-size:11px; font-weight:700; color:var(--text3); letter-spacing:0.03em; margin-bottom:12px;">글 스타일 조정</div>
     <div style="display:flex; flex-direction:column; gap:14px;">
 
       <!-- 글 길이 슬라이더 -->
@@ -1759,7 +1759,7 @@ body.splashing > *:not(#splashScreen) {
       <div style="padding:12px 16px 16px; display:flex; flex-direction:column; gap:8px;">
         <button onclick="publishAiSuggestDirect()" style="width:100%; padding:14px; border-radius:14px; border:none; background:linear-gradient(135deg,#f18091,#ffb3c1); color:#fff; font-size:14px; font-weight:800; cursor:pointer; box-shadow:0 4px 16px rgba(241,128,145,0.35); letter-spacing:-0.01em;">📸 인스타에 올리기</button>
         <div style="display:flex; gap:8px;">
-          <button onclick="copyAiSuggest()" style="flex:1; padding:11px; border-radius:12px; border:1.5px solid rgba(241,128,145,0.3); background:transparent; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer;">캡션 복사 📋</button>
+          <button onclick="copyAiSuggest()" style="flex:1; padding:11px; border-radius:12px; border:1.5px solid rgba(241,128,145,0.3); background:transparent; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer;">글 복사 📋</button>
           <button onclick="loadAiSuggest()" style="flex:1; padding:11px; border-radius:12px; border:1.5px solid rgba(241,128,145,0.3); background:transparent; color:var(--accent); font-size:12px; font-weight:700; cursor:pointer;">다른 사진 🔄</button>
         </div>
       </div>
@@ -2724,7 +2724,7 @@ async function runPersonaAnalyze() {
 }
 
 async function disconnectInstagram() {
-  if (!confirm('인스타 연동을 해제하시겠습니까? 데이터가 다시 연결될 때까지 캡션 연동이 끊어집니다.')) return;
+  if (!confirm('인스타 연동을 해제하시겠습니까? 데이터가 다시 연결될 때까지 글 자동 생성이 끊어집니다.')) return;
   try {
     await fetch(API + '/instagram/disconnect', { method: 'POST', headers: authHeader() });
     
@@ -2978,7 +2978,7 @@ async function showOnboardingCaptionPopup() {
   const ta = document.getElementById('ocpTextarea');
 
   // 팝업을 먼저 열고, 생성 중 상태로 표시
-  const loadingMsgs = ['AI가 말투를 분석하고 있어요...✨', '게시물 스타일 학습 중...🎀', '캡션 초안 작성 중...📝', '거의 다 됐어요!💫'];
+  const loadingMsgs = ['AI가 말투를 분석하고 있어요...✨', '게시물 스타일 학습 중...🎀', '피드 글 초안 작성 중...📝', '거의 다 됐어요!💫'];
   let msgIdx = 0;
   ta.value = loadingMsgs[0];
   ta.readOnly = true;
@@ -3030,7 +3030,7 @@ async function saveOnboardingCaption() {
     });
     if (!res.ok) throw new Error();
     closeOnboardingCaptionPopup();
-    showToast('학습 완료! 모든 캡션이 반영됩니다! 🎉');
+    showToast('학습 완료! 앞으로 모든 글에 반영됩니다! 🎉');
   } catch(e) {
     showToast('저장에 실패했어요. 다시 시도해주세요.');
   }
@@ -3307,7 +3307,7 @@ function publishToInstagram() {
   const editedCaption = document.getElementById('publishCaptionPreview').value.trim();
   const caption = document.getElementById('captionText').value;
   const hash = document.getElementById('captionHash').value;
-  const hasCaption = caption && !caption.includes("생성된 캡션이 여기에 나타납니다");
+  const hasCaption = caption && !caption.includes("생성된 글이 여기에 나타납니다");
 
   const finalText = editedCaption || (hasCaption ? caption + "\n\n" + hash : '(글 없이 사진만 올라갑니다)');
 
@@ -3457,7 +3457,7 @@ async function makeStoryCanvas(feedCanvas) {
 
 function copyCaption() {
   navigator.clipboard.writeText(document.getElementById('captionText').value)
-    .then(() => showToast('캡션 복사 완료! 📋'));
+    .then(() => showToast('글 복사 완료! 📋'));
 }
 function copyAll() {
   const c = document.getElementById('captionText').value;
@@ -3556,7 +3556,7 @@ function renderBA() {
   const previewArea = document.getElementById('publishConfirmArea');
   const previewInput = document.getElementById('publishCaptionPreview');
 
-  if (c && !c.includes("생성된 캡션이 여기에 나타납니다")) {
+  if (c && !c.includes("생성된 글이 여기에 나타납니다")) {
       previewInput.value = c + "\n\n" + h;
       previewArea.style.display = 'block';
   } else {
@@ -4519,7 +4519,7 @@ function copyAiSuggest() {
   const cap = document.getElementById('aiSuggestCaption').textContent.trim();
   const hash = document.getElementById('aiSuggestHash').textContent.trim();
   navigator.clipboard.writeText(cap + (hash ? '\n\n' + hash : '')).catch(() => {});
-  showToast('캡션 복사 완료 📋');
+  showToast('글 복사 완료 📋');
 }
 
 async function publishAiSuggestDirect() {
@@ -4981,8 +4981,8 @@ const _origGenerateCaptionEnd = window.generateCaption;
   <div class="ocp-card">
     <div class="ocp-emoji">✍️</div>
     <div class="ocp-title">AI가 첫 글을 써봤어요!</div>
-    <div class="ocp-sub">평소 쓰시는 말투로 조금만 수정해주시면<br>앞으로 모든 캡션에 반영할게요 🎀</div>
-    <textarea id="ocpTextarea" placeholder="AI가 쓴 테스트 캡션이 여기 나와요..."></textarea>
+    <div class="ocp-sub">평소 쓰시는 말투로 조금만 수정해주시면<br>앞으로 모든 글에 반영할게요 🎀</div>
+    <textarea id="ocpTextarea" placeholder="AI가 쓴 테스트 글이 여기 나와요..."></textarea>
     <div class="ocp-actions">
       <button class="ocp-skip" onclick="closeOnboardingCaptionPopup()">나중에</button>
       <button class="ocp-save" onclick="saveOnboardingCaption()">학습 완료! 반영하기 ✨</button>
