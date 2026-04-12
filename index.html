@@ -2398,10 +2398,12 @@ function resetShopSetup() {
   if (ob) ob.classList.remove('hidden');
 }
 
-function localReset() {
+async function localReset() {
   if (!confirm('앱을 처음 상태로 초기화할까요?\n(로그인은 유지됩니다)')) return;
   ['itdasy_consented','itdasy_consented_at','itdasy_latest_analysis',
    'onboarding_done','shop_name','shop_type'].forEach(k => localStorage.removeItem(k));
+  // 인스타 연동도 백엔드에서 해제
+  try { await fetch(API + '/instagram/disconnect', { method: 'POST', headers: authHeader() }); } catch(_) {}
   location.reload();
 }
 
