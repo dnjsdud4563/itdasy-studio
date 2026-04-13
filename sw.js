@@ -3,11 +3,17 @@
 //  CACHE_VERSION = 날짜(YYYYMMDD) + 빌드번호
 //  배포할 때마다 이 값만 올리면 구 캐시 자동 삭제
 // ─────────────────────────────────────────────
-const CACHE_VERSION = '20260413-studio';
+const CACHE_VERSION = '20260413-split';
 const CACHE_NAME    = `itdasy-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
   '/itdasy-studio/index.html',
+  '/itdasy-studio/style.css',
+  '/itdasy-studio/app-core.js',
+  '/itdasy-studio/app-instagram.js',
+  '/itdasy-studio/app-caption.js',
+  '/itdasy-studio/app-portfolio.js',
+  '/itdasy-studio/app-ai.js',
   '/itdasy-studio/manifest.json',
   'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap',
 ];
