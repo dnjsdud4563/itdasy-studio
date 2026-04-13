@@ -872,7 +872,7 @@ function _renderPopupBody(slot) {
       <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;"><span id="popupSelCount">0</span>장 선택됨 — 적용 방식 선택</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button onclick="_bulkApplyAiBg()" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:12px;font-weight:700;cursor:pointer;">AI 배경합성</button>
-        <button onclick="_bulkApplyBA()" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#8fa4ff,#a3b4ff);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">B·A 합성</button>
+        <button onclick="_bulkApplyBA()" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#8fa4ff,#a3b4ff);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">비포/애프터</button>
         <button onclick="_bulkApplyOriginal()" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:12px;font-weight:700;cursor:pointer;">원본</button>
       </div>
     </div>
@@ -905,7 +905,7 @@ function _renderPopupPhotoGrid(slot) {
   if (selArr[1]) baLabelMap[selArr[1]] = 'AFTER';
 
   const modeColor = { original: 'var(--text3)', ai_bg: 'var(--accent)', ba: '#8fa4ff' };
-  const modeLabel = { original: '원본', ai_bg: 'AI합성', ba: 'B·A' };
+  const modeLabel = { original: '원본', ai_bg: 'AI합성', ba: '비포/애프터' };
 
   grid.innerHTML = '';
   visiblePhotos.forEach(photo => {
@@ -1030,7 +1030,7 @@ async function _bulkApplyBA() {
   if (progress) progress.style.display = 'none';
   _popupSelIds.clear();
   _renderPopupPhotoGrid(slot);
-  showToast('B·A 합성 완료! [되돌리기]로 원본 복원 가능해요 ✅');
+  showToast('비포/애프터 완료! [되돌리기]로 원본 복원 가능해요 ✅');
 }
 
 async function restoreBAPhoto(baPhotoId) {
@@ -1783,7 +1783,7 @@ function _renderReviewPanel() {
       <input type="file" id="reviewUploadInput" accept="image/*" style="display:none;" onchange="handleReviewUpload(this)">
     </div>
     <div id="reviewExtractResult" style="display:none;margin-bottom:16px;"></div>
-    ${_reviewStickerCache.length ? `<div style="margin-bottom:16px;"><div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">⭐ 생성된 스티커</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">${_reviewStickerCache.map((s,i) => `<div style="cursor:pointer;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);" onclick="selectReviewSticker(${i})"><img src="${s}" style="width:100%;display:block;"></div>`).join('')}</div></div>` : ''}
+    ${_reviewStickerCache.length ? `<div style="margin-bottom:16px;"><div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">📸 업로드된 리뷰 (탭해서 선택)</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">${_reviewStickerCache.map((s,i) => `<div style="cursor:pointer;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);" onclick="selectReviewSticker(${i})"><img src="${s}" style="width:100%;display:block;"></div>`).join('')}</div></div>` : ''}
   `;
 }
 
@@ -1792,20 +1792,19 @@ async function handleReviewUpload(input) {
   if (!file) return;
   const resultDiv = document.getElementById('reviewExtractResult');
   resultDiv.style.display = 'block';
-  resultDiv.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);">AI가 리뷰를 분석 중... ✨</div>`;
+  resultDiv.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);">스크린샷 준비 중... ✨</div>`;
   try {
     const dataUrl = await _fileToDataUrl(file);
-    let reviewData = { text: '시술 너무 만족해요! 다음에 또 올게요 💕', rating: 5, platform: 'naver' };
-    try {
-      const res = await fetch(API + '/caption/extract-review', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ image_data: dataUrl }) });
-      if (res.ok) reviewData = await res.json();
-    } catch(_e) {}
-    const stickerDataUrl = await _createReviewSticker(reviewData);
-    _reviewStickerCache.unshift(stickerDataUrl);
+    // 스크린샷 직접 사용 (AI 추출 없이)
+    _reviewStickerCache.unshift(dataUrl);
     if (_reviewStickerCache.length > 6) _reviewStickerCache.pop();
-    resultDiv.innerHTML = `<div style="background:linear-gradient(135deg,#fff9fb,#fff5f7);border:1.5px solid rgba(241,128,145,0.2);border-radius:14px;padding:14px;"><div style="font-size:14px;margin-bottom:8px;">${'⭐'.repeat(reviewData.rating || 5)}</div><div style="font-size:13px;color:var(--text);line-height:1.5;">"${reviewData.text}"</div><div style="margin-top:12px;text-align:center;"><img src="${stickerDataUrl}" style="max-width:200px;border-radius:10px;"></div></div>`;
+    resultDiv.innerHTML = `<div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">업로드된 리뷰 스크린샷</div>
+      <img src="${dataUrl}" style="max-width:100%;max-height:200px;border-radius:10px;object-fit:contain;">
+    </div>`;
     _renderReviewPanel();
-  } catch(e) { resultDiv.innerHTML = `<div style="color:#dc3545;">추출 실패: ${e.message}</div>`; }
+    showToast('스크린샷이 추가됐어요! 아래에서 선택해 사진에 붙이세요 ✨');
+  } catch(e) { resultDiv.innerHTML = `<div style="color:#dc3545;">업로드 실패: ${e.message}</div>`; }
   input.value = '';
 }
 
@@ -2418,8 +2417,8 @@ async function initFinishTab() {
 }
 
 function _renderFinishTab(root, galleryItems = []) {
-  const doneSlots   = _slots.filter(s => s.status === 'done' && s.photos.length > 0);
-  const incompleteN = _slots.filter(s => s.status !== 'done' || !s.photos.length).length;
+  const doneSlots   = _slots.filter(s => s.status === 'done' && s.photos.length > 0 && !s.instagramPublished);
+  const incompleteN = _slots.filter(s => !s.instagramPublished && (s.status !== 'done' || !s.photos.length)).length;
 
   if (!_slots.length) {
     root.innerHTML = `
