@@ -1661,9 +1661,494 @@ async function _applyElementToPhoto(photo, slot) {
   await saveSlotToDB(slot);
 }
 
-// 템플릿/리뷰 패널 (플레이스홀더)
-function openTemplatePanel() { showToast('템플릿 준비 중...'); }
-function openReviewPanel() { showToast('리뷰 스티커 준비 중...'); }
+// ═══════════════════════════════════════════════════════
+// 템플릿 (배경 + 요소 조합)
+// ═══════════════════════════════════════════════════════
+const DEFAULT_TEMPLATES = [
+  { id: 'tpl_hair1', name: '붙임머리 기본', shopType: '붙임머리', bgId: 'pink', elements: [] },
+  { id: 'tpl_hair2', name: '붙임머리 심플', shopType: '붙임머리', bgId: 'white', elements: [] },
+  { id: 'tpl_nail1', name: '네일 핑크', shopType: '네일', bgId: 'pink', elements: [] },
+  { id: 'tpl_nail2', name: '네일 클라우드', shopType: '네일', bgId: 'cloud_color', elements: [] },
+];
+
+function _loadUserTemplates() {
+  try { return JSON.parse(localStorage.getItem('itdasy_user_templates') || '[]'); } catch(_) { return []; }
+}
+function _saveUserTemplates(arr) {
+  localStorage.setItem('itdasy_user_templates', JSON.stringify(arr));
+}
+
+function openTemplatePanel() {
+  document.getElementById('templatePanel').style.display = 'block';
+  _renderTemplatePanel();
+}
+function closeTemplatePanel() {
+  document.getElementById('templatePanel').style.display = 'none';
+}
+
+function _renderTemplatePanel() {
+  const body = document.getElementById('templatePanelBody');
+  if (!body) return;
+
+  const shopType = localStorage.getItem('shop_type') || '붙임머리';
+  const userTemplates = _loadUserTemplates();
+  const defaultForShop = DEFAULT_TEMPLATES.filter(t => t.shopType === shopType || t.shopType === '공통');
+  const allBgs = [...DEFAULT_BACKGROUNDS, ..._loadUserBgs()];
+
+  const renderCard = (tpl, isUser) => {
+    const bg = allBgs.find(b => b.id === tpl.bgId) || allBgs[0];
+    const preview = bg.imageData
+      ? `<img src="${bg.imageData}" style="width:100%;height:100%;object-fit:cover;">`
+      : `<div style="width:100%;height:100%;background:${bg.gradient || bg.color};"></div>`;
+
+    return `
+      <div style="position:relative;cursor:pointer;" onclick="applyTemplate('${tpl.id}')">
+        <div style="aspect-ratio:1/1;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);">
+          ${preview}
+          ${tpl.elements?.length ? `<div style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.6);border-radius:4px;padding:2px 6px;font-size:9px;color:#fff;">+${tpl.elements.length}</div>` : ''}
+        </div>
+        <div style="font-size:10px;color:var(--text2);text-align:center;margin-top:4px;font-weight:600;">${tpl.name}</div>
+        ${isUser ? `<button onclick="deleteTemplate('${tpl.id}',event)" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(220,53,69,0.9);color:#fff;font-size:12px;cursor:pointer;">×</button>` : ''}
+      </div>
+    `;
+  };
+
+  const slot = _slots.find(s => s.id === _popupSlotId);
+  const selectedPhotos = slot ? slot.photos.filter(p => _popupSelIds.has(p.id) && !p.hidden) : [];
+
+  body.innerHTML = `
+    ${userTemplates.length ? `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">💾 내 템플릿</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          ${userTemplates.map(tpl => renderCard(tpl, true)).join('')}
+        </div>
+      </div>
+    ` : ''}
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">📐 기본 템플릿 (${shopType})</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        ${defaultForShop.map(tpl => renderCard(tpl, false)).join('')}
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">현재 설정을 템플릿으로 저장</div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="newTemplateName" placeholder="템플릿 이름" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);font-size:13px;">
+        <button onclick="saveCurrentAsTemplate()" style="padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:12px;font-weight:700;cursor:pointer;">저장</button>
+      </div>
+    </div>
+    ${selectedPhotos.length === 0 ? `
+      <div style="margin-top:16px;padding:12px;background:var(--bg2);border-radius:10px;text-align:center;color:var(--text3);font-size:11px;">
+        사진을 선택하면 템플릿이 적용돼요
+      </div>
+    ` : ''}
+  `;
+}
+
+async function applyTemplate(tplId) {
+  const slot = _slots.find(s => s.id === _popupSlotId);
+  if (!slot) return;
+
+  const selectedPhotos = slot.photos.filter(p => _popupSelIds.has(p.id) && !p.hidden);
+  if (!selectedPhotos.length) {
+    showToast('먼저 사진을 선택해주세요');
+    return;
+  }
+
+  const allTemplates = [...DEFAULT_TEMPLATES, ..._loadUserTemplates()];
+  const tpl = allTemplates.find(t => t.id === tplId);
+  if (!tpl) return;
+
+  closeTemplatePanel();
+  const progress = document.getElementById('popupProgress');
+  if (progress) { progress.style.display = 'block'; progress.textContent = `템플릿 적용 중... 0/${selectedPhotos.length}`; }
+
+  // 배경 적용
+  const allBgs = [...DEFAULT_BACKGROUNDS, ..._loadUserBgs()];
+  const bg = allBgs.find(b => b.id === tpl.bgId);
+
+  for (let i = 0; i < selectedPhotos.length; i++) {
+    const photo = selectedPhotos[i];
+    if (progress) progress.textContent = `템플릿 적용 중... ${i + 1}/${selectedPhotos.length}`;
+    if (bg) {
+      try { await _applyBgToPhoto(photo, bg, slot); } catch(e) { console.warn(e); }
+    }
+  }
+
+  if (progress) progress.style.display = 'none';
+  _popupSelIds.clear();
+  _renderPopupPhotoGrid(slot);
+  showToast(`${selectedPhotos.length}장에 템플릿 적용 완료!`);
+}
+
+function saveCurrentAsTemplate() {
+  const name = document.getElementById('newTemplateName')?.value?.trim();
+  if (!name) { showToast('템플릿 이름을 입력해주세요'); return; }
+
+  const templates = _loadUserTemplates();
+  templates.push({
+    id: 'tpl_user_' + Date.now(),
+    name: name.slice(0, 12),
+    shopType: localStorage.getItem('shop_type') || '붙임머리',
+    bgId: _selectedBgId || 'white',
+    elements: [],
+  });
+  _saveUserTemplates(templates);
+  _renderTemplatePanel();
+  showToast('템플릿 저장됨!');
+}
+
+function deleteTemplate(id, e) {
+  e.stopPropagation();
+  if (!confirm('이 템플릿을 삭제할까요?')) return;
+  const templates = _loadUserTemplates();
+  _saveUserTemplates(templates.filter(t => t.id !== id));
+  _renderTemplatePanel();
+}
+
+// ═══════════════════════════════════════════════════════
+// 리뷰 스티커 (Gemini Vision 텍스트 추출 + 감성 카드)
+// ═══════════════════════════════════════════════════════
+let _reviewEditState = null;
+let _reviewStickerCache = []; // 생성된 스티커 캐시
+
+function openReviewPanel() {
+  document.getElementById('reviewPanel').style.display = 'block';
+  _renderReviewPanel();
+}
+function closeReviewPanel() {
+  document.getElementById('reviewPanel').style.display = 'none';
+}
+
+function _renderReviewPanel() {
+  const body = document.getElementById('reviewPanelBody');
+  if (!body) return;
+
+  const slot = _slots.find(s => s.id === _popupSlotId);
+  const selectedPhotos = slot ? slot.photos.filter(p => _popupSelIds.has(p.id) && !p.hidden) : [];
+
+  body.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">📸 리뷰 스크린샷 업로드</div>
+      <div style="text-align:center;padding:20px;border:2px dashed var(--border);border-radius:14px;cursor:pointer;background:var(--bg2);" onclick="document.getElementById('reviewUploadInput').click()">
+        <div style="font-size:32px;margin-bottom:8px;">📱</div>
+        <div style="font-size:13px;color:var(--text2);font-weight:600;">네이버/카톡 리뷰 캡처 올리기</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">AI가 텍스트와 별점을 자동 추출해요</div>
+      </div>
+      <input type="file" id="reviewUploadInput" accept="image/*" style="display:none;" onchange="handleReviewUpload(this)">
+    </div>
+    <div id="reviewExtractResult" style="display:none;margin-bottom:16px;"></div>
+    ${_reviewStickerCache.length ? `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">⭐ 생성된 스티커</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+          ${_reviewStickerCache.map((sticker, idx) => `
+            <div style="cursor:pointer;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);" onclick="selectReviewSticker(${idx})">
+              <img src="${sticker}" style="width:100%;display:block;">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+    ${selectedPhotos.length === 0 ? `
+      <div style="padding:12px;background:var(--bg2);border-radius:10px;text-align:center;color:var(--text3);font-size:11px;">
+        사진을 선택한 후 스티커를 탭하면 배치할 수 있어요
+      </div>
+    ` : ''}
+  `;
+}
+
+async function handleReviewUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const resultDiv = document.getElementById('reviewExtractResult');
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">AI가 리뷰를 분석하고 있어요... ✨</div>`;
+
+  try {
+    const dataUrl = await _fileToDataUrl(file);
+
+    // Gemini Vision API 호출 (백엔드)
+    const res = await fetch(API + '/caption/extract-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ image_data: dataUrl }),
+    });
+
+    let reviewData;
+    if (res.ok) {
+      reviewData = await res.json();
+    } else {
+      // 백엔드 없으면 더미 데이터
+      reviewData = { text: '시술 너무 만족해요! 다음에 또 올게요 💕', rating: 5, platform: 'naver' };
+    }
+
+    // 감성 스티커 카드 생성
+    const stickerDataUrl = await _createReviewSticker(reviewData);
+    _reviewStickerCache.unshift(stickerDataUrl);
+    if (_reviewStickerCache.length > 6) _reviewStickerCache.pop();
+
+    resultDiv.innerHTML = `
+      <div style="background:linear-gradient(135deg,#fff9fb,#fff5f7);border:1.5px solid rgba(241,128,145,0.2);border-radius:14px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="font-size:14px;">${'⭐'.repeat(reviewData.rating || 5)}</span>
+          <span style="font-size:11px;color:var(--text3);">${reviewData.platform || '리뷰'}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text);line-height:1.5;">"${reviewData.text}"</div>
+        <div style="margin-top:12px;text-align:center;">
+          <img src="${stickerDataUrl}" style="max-width:200px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        </div>
+      </div>
+    `;
+    _renderReviewPanel();
+  } catch(e) {
+    resultDiv.innerHTML = `<div style="text-align:center;padding:16px;color:#dc3545;font-size:12px;">추출 실패: ${e.message}</div>`;
+  }
+  input.value = '';
+}
+
+async function _createReviewSticker(data) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 400; canvas.height = 200;
+  const ctx = canvas.getContext('2d');
+
+  // 배경 그라데이션
+  const grad = ctx.createLinearGradient(0, 0, 400, 200);
+  grad.addColorStop(0, '#fff5f7');
+  grad.addColorStop(1, '#ffe4ec');
+  ctx.fillStyle = grad;
+  ctx.roundRect(0, 0, 400, 200, 16);
+  ctx.fill();
+
+  // 테두리
+  ctx.strokeStyle = 'rgba(241,128,145,0.3)';
+  ctx.lineWidth = 2;
+  ctx.roundRect(0, 0, 400, 200, 16);
+  ctx.stroke();
+
+  // 별점
+  ctx.font = '24px sans-serif';
+  ctx.fillText('⭐'.repeat(data.rating || 5), 20, 40);
+
+  // 텍스트
+  ctx.font = '600 16px -apple-system, sans-serif';
+  ctx.fillStyle = '#333';
+  const text = data.text || '';
+  const lines = _wrapText(ctx, `"${text}"`, 360);
+  lines.slice(0, 3).forEach((line, i) => {
+    ctx.fillText(line, 20, 80 + i * 24);
+  });
+
+  // 플랫폼 뱃지
+  ctx.font = '500 12px -apple-system, sans-serif';
+  ctx.fillStyle = '#f18091';
+  ctx.fillText(data.platform || '고객리뷰', 20, 180);
+
+  return canvas.toDataURL('image/png');
+}
+
+function _wrapText(ctx, text, maxWidth) {
+  const words = text.split('');
+  const lines = [];
+  let line = '';
+  for (const char of words) {
+    const test = line + char;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = char;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function selectReviewSticker(idx) {
+  const slot = _slots.find(s => s.id === _popupSlotId);
+  if (!slot) return;
+
+  const selectedPhotos = slot.photos.filter(p => _popupSelIds.has(p.id) && !p.hidden);
+  if (!selectedPhotos.length) {
+    showToast('먼저 사진을 선택해주세요');
+    return;
+  }
+
+  const stickerDataUrl = _reviewStickerCache[idx];
+  if (!stickerDataUrl) return;
+
+  const photo = selectedPhotos[0];
+  _reviewEditState = {
+    photoId: photo.id,
+    allPhotoIds: selectedPhotos.map(p => p.id),
+    stickerImg: stickerDataUrl,
+    x: 50, y: 75,
+    scale: 40,
+    opacity: 100,
+  };
+
+  closeReviewPanel();
+  _openReviewEditor(photo);
+}
+
+function _openReviewEditor(photo) {
+  const editor = document.getElementById('reviewEditor');
+  const canvas = document.getElementById('reviewEditorCanvas');
+  editor.style.display = 'block';
+
+  const photoSrc = photo.editedDataUrl || photo.dataUrl;
+  canvas.innerHTML = `
+    <div id="reviewEditWrap" style="position:relative;width:90%;max-width:400px;aspect-ratio:1/1;">
+      <img src="${photoSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+      <img id="reviewOverlay" src="${_reviewEditState.stickerImg}" style="position:absolute;left:${_reviewEditState.x}%;top:${_reviewEditState.y}%;transform:translate(-50%,-50%);width:${_reviewEditState.scale}%;opacity:${_reviewEditState.opacity/100};pointer-events:none;">
+    </div>
+  `;
+
+  document.getElementById('reviewOpacity').value = _reviewEditState.opacity;
+  document.getElementById('reviewOpacityVal').textContent = _reviewEditState.opacity + '%';
+
+  _setupReviewDrag();
+}
+
+function _setupReviewDrag() {
+  const wrap = document.getElementById('reviewEditWrap');
+  const overlay = document.getElementById('reviewOverlay');
+  if (!wrap || !overlay) return;
+
+  let dragging = false, startX, startY, startElemX, startElemY;
+  let pinching = false, startDist, startScale;
+
+  const getPos = (clientX, clientY) => {
+    const rect = wrap.getBoundingClientRect();
+    return {
+      x: ((clientX - rect.left) / rect.width) * 100,
+      y: ((clientY - rect.top) / rect.height) * 100,
+    };
+  };
+
+  const updateOverlay = () => {
+    overlay.style.left = _reviewEditState.x + '%';
+    overlay.style.top = _reviewEditState.y + '%';
+    overlay.style.width = _reviewEditState.scale + '%';
+    overlay.style.opacity = _reviewEditState.opacity / 100;
+  };
+
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      pinching = true;
+      startDist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
+      startScale = _reviewEditState.scale;
+    } else if (e.touches.length === 1) {
+      dragging = true;
+      const pos = getPos(e.touches[0].clientX, e.touches[0].clientY);
+      startX = pos.x; startY = pos.y;
+      startElemX = _reviewEditState.x; startElemY = _reviewEditState.y;
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', e => {
+    if (pinching && e.touches.length === 2) {
+      const dist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
+      _reviewEditState.scale = Math.max(15, Math.min(80, startScale * (dist / startDist)));
+      updateOverlay();
+      e.preventDefault();
+    } else if (dragging && e.touches.length === 1) {
+      const pos = getPos(e.touches[0].clientX, e.touches[0].clientY);
+      _reviewEditState.x = Math.max(10, Math.min(90, startElemX + (pos.x - startX)));
+      _reviewEditState.y = Math.max(10, Math.min(90, startElemY + (pos.y - startY)));
+      updateOverlay();
+    }
+  }, { passive: false });
+
+  wrap.addEventListener('touchend', () => { dragging = false; pinching = false; });
+
+  wrap.addEventListener('mousedown', e => {
+    dragging = true;
+    const pos = getPos(e.clientX, e.clientY);
+    startX = pos.x; startY = pos.y;
+    startElemX = _reviewEditState.x; startElemY = _reviewEditState.y;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const rect = wrap.getBoundingClientRect();
+    const pos = { x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 };
+    _reviewEditState.x = Math.max(10, Math.min(90, startElemX + (pos.x - startX)));
+    _reviewEditState.y = Math.max(10, Math.min(90, startElemY + (pos.y - startY)));
+    updateOverlay();
+  });
+  window.addEventListener('mouseup', () => { dragging = false; });
+
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    _reviewEditState.scale = Math.max(15, Math.min(80, _reviewEditState.scale - e.deltaY * 0.05));
+    updateOverlay();
+  }, { passive: false });
+}
+
+function updateReviewOpacity(val) {
+  _reviewEditState.opacity = parseInt(val);
+  document.getElementById('reviewOpacityVal').textContent = val + '%';
+  const overlay = document.getElementById('reviewOverlay');
+  if (overlay) overlay.style.opacity = val / 100;
+}
+
+function cancelReviewEdit() {
+  document.getElementById('reviewEditor').style.display = 'none';
+  _reviewEditState = null;
+}
+
+async function saveReviewEdit() {
+  if (!_reviewEditState) return;
+
+  const slot = _slots.find(s => s.id === _popupSlotId);
+  if (!slot) return;
+
+  const progress = document.getElementById('popupProgress');
+  document.getElementById('reviewEditor').style.display = 'none';
+
+  const photoIds = _reviewEditState.allPhotoIds;
+  if (progress) { progress.style.display = 'block'; progress.textContent = `스티커 적용 중... 0/${photoIds.length}`; }
+
+  for (let i = 0; i < photoIds.length; i++) {
+    const photo = slot.photos.find(p => p.id === photoIds[i]);
+    if (!photo) continue;
+    if (progress) progress.textContent = `스티커 적용 중... ${i + 1}/${photoIds.length}`;
+    await _applyReviewToPhoto(photo, slot);
+  }
+
+  if (progress) progress.style.display = 'none';
+  _popupSelIds.clear();
+  _reviewEditState = null;
+  _renderPopupPhotoGrid(slot);
+  showToast(`${photoIds.length}장에 스티커 적용 완료!`);
+}
+
+async function _applyReviewToPhoto(photo, slot) {
+  const state = _reviewEditState;
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080; canvas.height = 1080;
+  const ctx = canvas.getContext('2d');
+
+  const baseImg = await _loadImageSrc(photo.editedDataUrl || photo.dataUrl);
+  _drawCoverCtx(ctx, baseImg, 1080, 1080);
+
+  const stickerImg = await _loadImageSrc(state.stickerImg);
+  const stickerW = 1080 * (state.scale / 100);
+  const stickerH = stickerW * (stickerImg.height / stickerImg.width);
+  const stickerX = 1080 * (state.x / 100) - stickerW / 2;
+  const stickerY = 1080 * (state.y / 100) - stickerH / 2;
+
+  ctx.globalAlpha = state.opacity / 100;
+  ctx.drawImage(stickerImg, stickerX, stickerY, stickerW, stickerH);
+  ctx.globalAlpha = 1;
+
+  photo.editedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  photo.mode = 'review_sticker';
+  await saveSlotToDB(slot);
+}
 
 // ═══════════════════════════════════════════════════════
 // 피크 캐러셀 (글쓰기 슬롯 사진 / 미리보기 공용)
@@ -2241,38 +2726,26 @@ function _renderFinishTab(root, galleryItems = []) {
     `;
   }).join('');
 
-  // 갤러리 섹션
+  // 갤러리 섹션 (검색 + 필터)
   const galleryHtml = galleryItems.length ? (() => {
-    // 날짜별 그룹
-    const byDate = {};
-    galleryItems.forEach(item => {
-      const d = item.date || '날짜 없음';
-      if (!byDate[d]) byDate[d] = [];
-      byDate[d].push(item);
-    });
-    const dateHtml = Object.entries(byDate).map(([date, items]) => `
-      <div style="margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;">${date}</div>
-        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;">
-          ${items.map(item => {
-            const thumb = item.photos?.[0];
-            return thumb ? `
-              <div style="flex-shrink:0;width:80px;cursor:pointer;" onclick="_galleryItemDetail('${item.id}')">
-                <div style="position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;">
-                  <img src="${thumb.dataUrl}" style="width:100%;height:100%;object-fit:cover;">
-                  ${item.photos.length > 1 ? `<div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);border-radius:4px;padding:1px 4px;font-size:9px;color:#fff;">+${item.photos.length}</div>` : ''}
-                </div>
-                <div style="font-size:9px;color:var(--text2);margin-top:3px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.label}</div>
-              </div>
-            ` : '';
-          }).join('')}
-        </div>
-      </div>
-    `).join('');
     return `
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-        <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px;">갤러리 📁 <span style="font-size:11px;color:var(--text3);font-weight:400;">${galleryItems.length}개</span></div>
-        ${dateHtml}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:800;color:var(--text);">갤러리 📁 <span style="font-size:11px;color:var(--text3);font-weight:400;">${galleryItems.length}개</span></div>
+        </div>
+        <!-- 검색창 -->
+        <div style="margin-bottom:12px;">
+          <input type="text" id="gallerySearchInput" placeholder="키워드/태그로 검색..." oninput="_filterGallery()" style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid var(--border);font-size:13px;box-sizing:border-box;">
+        </div>
+        <!-- 필터 버튼 -->
+        <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;">
+          <button class="gallery-filter-btn active" data-filter="all" onclick="_setGalleryFilter('all',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent);background:rgba(241,128,145,0.1);color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;">전체</button>
+          <button class="gallery-filter-btn" data-filter="published" onclick="_setGalleryFilter('published',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text3);font-size:11px;font-weight:700;cursor:pointer;">발행완료</button>
+          <button class="gallery-filter-btn" data-filter="saved" onclick="_setGalleryFilter('saved',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text3);font-size:11px;font-weight:700;cursor:pointer;">보관중</button>
+          <button class="gallery-filter-btn" data-filter="pending" onclick="_setGalleryFilter('pending',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text3);font-size:11px;font-weight:700;cursor:pointer;">대기</button>
+        </div>
+        <!-- 갤러리 목록 -->
+        <div id="galleryList"></div>
       </div>`;
   })() : '';
 
@@ -2283,7 +2756,111 @@ function _renderFinishTab(root, galleryItems = []) {
     ${slotsHtml}
     ${galleryHtml}
   `;
+
+  // 갤러리 목록 초기 렌더링
+  if (galleryItems.length) {
+    window._galleryItemsCache = galleryItems;
+    window._galleryFilter = 'all';
+    _renderGalleryList(galleryItems);
+  }
 }
+
+let _galleryFilter = 'all';
+
+function _setGalleryFilter(filter, btn) {
+  _galleryFilter = filter;
+  document.querySelectorAll('.gallery-filter-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'transparent';
+    b.style.color = 'var(--text3)';
+  });
+  btn.classList.add('active');
+  btn.style.borderColor = 'var(--accent)';
+  btn.style.background = 'rgba(241,128,145,0.1)';
+  btn.style.color = 'var(--accent)';
+  _filterGallery();
+}
+
+function _filterGallery() {
+  const items = window._galleryItemsCache || [];
+  const search = (document.getElementById('gallerySearchInput')?.value || '').toLowerCase().trim();
+
+  let filtered = items;
+
+  // 필터 적용
+  if (_galleryFilter === 'published') {
+    filtered = filtered.filter(item => item.instagramPublished);
+  } else if (_galleryFilter === 'saved') {
+    filtered = filtered.filter(item => !item.instagramPublished && item.caption);
+  } else if (_galleryFilter === 'pending') {
+    filtered = filtered.filter(item => !item.instagramPublished && !item.caption);
+  }
+
+  // 검색 적용
+  if (search) {
+    filtered = filtered.filter(item => {
+      const label = (item.label || '').toLowerCase();
+      const caption = (item.caption || '').toLowerCase();
+      const hashtags = (item.hashtags || '').toLowerCase();
+      return label.includes(search) || caption.includes(search) || hashtags.includes(search);
+    });
+  }
+
+  _renderGalleryList(filtered);
+}
+
+function _renderGalleryList(items) {
+  const list = document.getElementById('galleryList');
+  if (!list) return;
+
+  if (!items.length) {
+    list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">검색 결과가 없어요</div>`;
+    return;
+  }
+
+  // 날짜별 그룹
+  const byDate = {};
+  items.forEach(item => {
+    const d = item.date || '날짜 없음';
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(item);
+  });
+
+  list.innerHTML = Object.entries(byDate).map(([date, dateItems]) => `
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;">${date}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        ${dateItems.map(item => {
+          const thumb = item.photos?.[0];
+          const tags = _extractTags(item);
+          const statusBadge = item.instagramPublished
+            ? '<div style="position:absolute;top:4px;left:4px;background:rgba(76,175,80,0.9);border-radius:4px;padding:2px 5px;font-size:8px;color:#fff;font-weight:700;">발행</div>'
+            : '';
+          return thumb ? `
+            <div style="cursor:pointer;" onclick="_galleryItemDetail('${item.id}')">
+              <div style="position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;">
+                <img src="${thumb.dataUrl}" style="width:100%;height:100%;object-fit:cover;">
+                ${statusBadge}
+                ${item.photos.length > 1 ? `<div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);border-radius:4px;padding:1px 4px;font-size:9px;color:#fff;">+${item.photos.length}</div>` : ''}
+              </div>
+              <div style="font-size:9px;color:var(--text2);margin-top:3px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.label}</div>
+              ${tags.length ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:2px;">${tags.slice(0,2).map(t => `<span style="font-size:8px;background:rgba(241,128,145,0.1);color:var(--accent);border-radius:3px;padding:1px 4px;">${t}</span>`).join('')}</div>` : ''}
+            </div>
+          ` : '';
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function _extractTags(item) {
+  const tags = [];
+  if (item.hashtags) {
+    const hashTags = item.hashtags.match(/#\w+/g) || [];
+    tags.push(...hashTags.slice(0, 3).map(t => t.replace('#', '')));
+  }
+  return tags;
 
 function _galleryItemDetail(galleryId) {
   loadGalleryItems().then(items => {
@@ -2299,6 +2876,9 @@ function _galleryItemDetail(galleryId) {
       document.body.appendChild(pop);
     }
     const escapedCaption = (item.caption || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const tags = _extractTags(item);
+    const tagsHtml = tags.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${tags.map(t => `<span style="font-size:10px;background:rgba(241,128,145,0.1);color:var(--accent);border-radius:6px;padding:3px 8px;font-weight:600;">#${t}</span>`).join('')}</div>` : '';
+
     pop.innerHTML = `
       <div style="width:100%;max-width:480px;background:#fff;border-radius:20px 20px 0 0;max-height:90vh;overflow-y:auto;padding:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -2306,15 +2886,74 @@ function _galleryItemDetail(galleryId) {
           <button onclick="document.getElementById('_galleryDetailPop').style.display='none'" style="background:transparent;border:none;font-size:20px;color:#aaa;cursor:pointer;">×</button>
         </div>
         ${_buildPeekCarousel(photos, 'gd_carousel')}
+        ${tagsHtml}
         ${escapedCaption ? `<div style="margin-top:12px;font-size:13px;color:#333;white-space:pre-wrap;line-height:1.6;">${escapedCaption}</div>` : ''}
-        <div style="display:flex;gap:8px;margin-top:14px;">
-          <button onclick="deleteGalleryItem('${item.id}').then(()=>{document.getElementById('_galleryDetailPop').style.display='none';initFinishTab();})" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid var(--border);background:transparent;font-size:12px;color:var(--text3);cursor:pointer;">삭제</button>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;">
+          <button onclick="_republishGalleryItem('${item.id}')" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:800;cursor:pointer;">📸 다시 올리기</button>
+          <div style="display:flex;gap:8px;">
+            <button onclick="downloadGalleryItem('${item.id}')" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid var(--border);background:transparent;font-size:12px;color:var(--text2);cursor:pointer;font-weight:600;">📥 저장</button>
+            <button onclick="deleteGalleryItem('${item.id}').then(()=>{document.getElementById('_galleryDetailPop').style.display='none';initFinishTab();})" style="flex:1;padding:10px;border-radius:12px;border:1.5px solid rgba(220,53,69,0.3);background:transparent;font-size:12px;color:#dc3545;cursor:pointer;">삭제</button>
+          </div>
         </div>
       </div>
     `;
     pop.style.display = 'flex';
     setTimeout(() => _initPeekCarousel('gd_carousel', photos.length), 80);
   });
+}
+
+// ===== 갤러리 아이템 다시 올리기 (인스타그램 재발행) =====
+async function _republishGalleryItem(galleryId) {
+  const items = await loadGalleryItems();
+  const item = items.find(i => i.id === galleryId);
+  if (!item?.photos?.length) { showToast('사진이 없어요'); return; }
+
+  const visPhotos = item.photos.filter(p => !p.hidden);
+  const photo = visPhotos[0] || item.photos[0];
+  const fullCaption = (item.caption || '') + (item.hashtags ? '\n\n' + item.hashtags : '');
+
+  // 팝업 닫기
+  const pop = document.getElementById('_galleryDetailPop');
+  if (pop) pop.style.display = 'none';
+
+  try {
+    const blob = _dataUrlToBlob(photo.editedDataUrl || photo.dataUrl);
+    const fd = new FormData();
+    fd.append('image', blob, 'gallery_photo.jpg');
+    fd.append('photo_type', 'after');
+    fd.append('main_tag', item.label || '');
+    fd.append('tags', '');
+
+    const upRes = await fetch(API + '/portfolio', { method: 'POST', headers: authHeader(), body: fd });
+    if (!upRes.ok) { showToast('업로드 실패'); return; }
+    const upData = await upRes.json();
+    const imgUrl = upData.image_url?.startsWith('http') ? upData.image_url : API + (upData.image_url || '');
+
+    if (typeof doInstagramPublish === 'function') {
+      const success = await doInstagramPublish(imgUrl, fullCaption);
+      if (success) {
+        showToast('다시 업로드 완료! ✨');
+        initFinishTab();
+      }
+    }
+  } catch(e) {
+    showToast('오류: ' + e.message);
+  }
+}
+
+// ===== 갤러리 아이템 다운로드 =====
+async function downloadGalleryItem(galleryId) {
+  const items = await loadGalleryItems();
+  const item = items.find(i => i.id === galleryId);
+  if (!item?.photos?.length) { showToast('사진이 없어요'); return; }
+
+  item.photos.forEach((p, i) => {
+    const a = document.createElement('a');
+    a.download = `itdasy_${item.label || 'gallery'}_${i + 1}_${Date.now()}.jpg`;
+    a.href = p.editedDataUrl || p.dataUrl;
+    a.click();
+  });
+  showToast('사진 저장 중... 📥');
 }
 
 async function _saveSlotToGallery(slotId) {

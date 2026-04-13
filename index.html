@@ -892,6 +892,46 @@
   </div>
 </div>
 
+<!-- 템플릿 패널 -->
+<div id="templatePanel" style="display:none; position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,0.5);" onclick="if(event.target===this)closeTemplatePanel()">
+  <div style="position:absolute; bottom:0; left:0; right:0; max-height:75vh; background:#fff; border-radius:20px 20px 0 0; overflow:hidden; display:flex; flex-direction:column;">
+    <div style="padding:16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+      <div style="font-size:15px; font-weight:800; color:var(--text);">📐 템플릿</div>
+      <button onclick="closeTemplatePanel()" style="background:transparent; border:none; font-size:20px; color:var(--text3); cursor:pointer;">×</button>
+    </div>
+    <div id="templatePanelBody" style="flex:1; overflow-y:auto; padding:16px;"></div>
+  </div>
+</div>
+
+<!-- 리뷰 스티커 패널 -->
+<div id="reviewPanel" style="display:none; position:fixed; inset:0; z-index:9100; background:rgba(0,0,0,0.5);" onclick="if(event.target===this)closeReviewPanel()">
+  <div style="position:absolute; bottom:0; left:0; right:0; max-height:85vh; background:#fff; border-radius:20px 20px 0 0; overflow:hidden; display:flex; flex-direction:column;">
+    <div style="padding:16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+      <div style="font-size:15px; font-weight:800; color:var(--text);">⭐ 리뷰 스티커</div>
+      <button onclick="closeReviewPanel()" style="background:transparent; border:none; font-size:20px; color:var(--text3); cursor:pointer;">×</button>
+    </div>
+    <div id="reviewPanelBody" style="flex:1; overflow-y:auto; padding:16px;"></div>
+  </div>
+</div>
+
+<!-- 리뷰 스티커 편집기 -->
+<div id="reviewEditor" style="display:none; position:fixed; inset:0; z-index:9200; background:#000;">
+  <div style="position:absolute; top:0; left:0; right:0; padding:12px 16px; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:space-between; z-index:2;">
+    <button onclick="cancelReviewEdit()" style="background:transparent; border:none; color:#fff; font-size:14px; cursor:pointer;">취소</button>
+    <div style="color:#fff; font-size:13px; font-weight:600;">리뷰 스티커 배치</div>
+    <button onclick="saveReviewEdit()" style="background:var(--accent); border:none; color:#fff; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">완료</button>
+  </div>
+  <div id="reviewEditorCanvas" style="position:absolute; top:50px; bottom:100px; left:0; right:0; display:flex; align-items:center; justify-content:center; overflow:hidden;"></div>
+  <div style="position:absolute; bottom:0; left:0; right:0; padding:16px; background:rgba(0,0,0,0.8);">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+      <span style="color:#fff; font-size:12px; width:50px;">투명도</span>
+      <input type="range" id="reviewOpacity" min="10" max="100" value="100" oninput="updateReviewOpacity(this.value)" style="flex:1;">
+      <span id="reviewOpacityVal" style="color:#fff; font-size:12px; width:36px; text-align:right;">100%</span>
+    </div>
+    <div style="color:rgba(255,255,255,0.6); font-size:11px; text-align:center;">드래그로 위치 이동 · 두 손가락으로 크기 조절</div>
+  </div>
+</div>
+
 <div class="copy-toast" id="copyToast"></div>
 
 <script src="app-core.js"></script>
