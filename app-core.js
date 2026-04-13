@@ -406,52 +406,55 @@ async function login() {
   btn.textContent = '로그인'; btn.disabled = false;
 }
 
-// Enter 키 로그인
-document.getElementById('loginPassword').addEventListener('keydown', e => { if(e.key === 'Enter') login(); });
+// ===== 앱 초기화 (모든 모듈 로드 후 실행) =====
+window.addEventListener('load', function() {
+  // Enter 키 로그인
+  document.getElementById('loginPassword').addEventListener('keydown', e => { if(e.key === 'Enter') login(); });
 
-// Chrome으로 이동 시 토큰 자동 복원 + 연동 자동 실행
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  const t = params.get('_t');
-  if (t) {
-    setToken(decodeURIComponent(t));
-    history.replaceState(null, '', window.location.pathname);
-  }
-})();
-
-// 토큰 있으면 자동 로그인
-if(getToken()) {
-  document.getElementById('lockOverlay').classList.add('hidden');
-  checkCbt1Reset();
-  checkOnboarding();
-  initToneController();
-  checkInstaStatus().then(() => {
-    // 인스타 OAuth 콜백 후 내 말투 자동 완성
+  // Chrome으로 이동 시 토큰 자동 복원 + 연동 자동 실행
+  (function() {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('connected') === 'success') {
-      history.replaceState(null, '', window.location.pathname); // URL 파라미터 제거
-      setTimeout(runPersonaAnalyze, 800);
-    }
-    // Chrome 이동 후 자동 연동 시작
-    if (params.get('auto_connect') === '1') {
+    const t = params.get('_t');
+    if (t) {
+      setToken(decodeURIComponent(t));
       history.replaceState(null, '', window.location.pathname);
-      setTimeout(connectInstagram, 500);
     }
-  });
+  })();
 
-  // 기존 동의 완료 시각 복원
-  const consentedAt = localStorage.getItem('itdasy_consented_at');
-  const tsEl2 = document.getElementById('consentTimestampDisplay');
-  if (tsEl2) {
-    if (consentedAt) {
-      tsEl2.textContent = `✅ 개인정보 동의 완료 · ${consentedAt}`;
-      tsEl2.style.display = 'inline';
-    } else {
-      tsEl2.textContent = '';
-      tsEl2.style.display = 'none';
+  // 토큰 있으면 자동 로그인
+  if(getToken()) {
+    document.getElementById('lockOverlay').classList.add('hidden');
+    checkCbt1Reset();
+    checkOnboarding();
+    initToneController();
+    checkInstaStatus().then(() => {
+      // 인스타 OAuth 콜백 후 내 말투 자동 완성
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('connected') === 'success') {
+        history.replaceState(null, '', window.location.pathname);
+        setTimeout(runPersonaAnalyze, 800);
+      }
+      // Chrome 이동 후 자동 연동 시작
+      if (params.get('auto_connect') === '1') {
+        history.replaceState(null, '', window.location.pathname);
+        setTimeout(connectInstagram, 500);
+      }
+    });
+
+    // 기존 동의 완료 시각 복원
+    const consentedAt = localStorage.getItem('itdasy_consented_at');
+    const tsEl2 = document.getElementById('consentTimestampDisplay');
+    if (tsEl2) {
+      if (consentedAt) {
+        tsEl2.textContent = `✅ 개인정보 동의 완료 · ${consentedAt}`;
+        tsEl2.style.display = 'inline';
+      } else {
+        tsEl2.textContent = '';
+        tsEl2.style.display = 'none';
+      }
     }
   }
-}
+});
 
 function expandSmartMenu() {
   openQuickAction();
