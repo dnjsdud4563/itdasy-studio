@@ -428,7 +428,7 @@ function createSlotsCustom() {
 async function _createSlots(n) {
   const base = _slots.length;
   for (let i = 0; i < n; i++) {
-    const slot = { id: _uid(), label: `손님 ${base + i + 1}`, order: base + i, photos: [], caption: '', hashtags: '', status: 'open' };
+    const slot = { id: _uid(), label: `손님 ${base + i + 1}`, order: base + i, photos: [], caption: '', hashtags: '', status: 'open', instagramPublished: false, deferredAt: null, createdAt: Date.now() };
     _slots.push(slot);
     try { await saveSlotToDB(slot); } catch(_e) {}
   }
@@ -1334,30 +1334,41 @@ function _renderFinishTab(root, galleryItems = []) {
   }
 
   const slotsHtml = doneSlots.map(slot => {
-    const thumbs = slot.photos.slice(0, 2).map(p =>
+    const visPhotos = slot.photos.filter(p => !p.hidden);
+    const thumbs = (visPhotos.length ? visPhotos : slot.photos).slice(0, 2).map(p =>
       `<img src="${p.editedDataUrl || p.dataUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;">`
     ).join('');
     const cap = slot.caption
-      ? `<div style="font-size:11px;color:var(--text3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${slot.caption.slice(0,40)}...</div>`
+      ? `<div style="font-size:11px;color:var(--text3);margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${slot.caption.slice(0, 60)}${slot.caption.length > 60 ? '…' : ''}</div>`
       : '';
+    const isDeferred = !!slot.deferredAt;
     return `
-      <div style="background:#fff;border:1.5px solid rgba(76,175,80,0.3);border-radius:16px;padding:14px;margin-bottom:10px;">
+      <div data-finish-slot="${slot.id}" style="background:#fff;border:1.5px solid ${isDeferred ? 'rgba(255,193,7,0.4)' : 'rgba(76,175,80,0.3)'};border-radius:16px;padding:14px;margin-bottom:10px;">
+        <!-- 슬롯 정보 -->
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
           <div style="display:flex;gap:4px;">${thumbs}</div>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:800;color:var(--text);">${slot.label} ✅</div>
-            <div style="font-size:11px;color:var(--text3);">${slot.photos.length}장</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <div style="font-size:13px;font-weight:800;color:var(--text);">${slot.label} ✅</div>
+              ${slot.caption ? '<span style="font-size:9px;background:rgba(76,175,80,0.15);color:#388e3c;border-radius:4px;padding:1px 5px;font-weight:700;">캡션✓</span>' : ''}
+              ${isDeferred ? '<span style="font-size:9px;background:rgba(255,193,7,0.15);color:#f57c00;border-radius:4px;padding:1px 5px;font-weight:700;">나중에</span>' : ''}
+            </div>
+            <div style="font-size:11px;color:var(--text3);">${visPhotos.length}장</div>
             ${cap}
           </div>
-          <button onclick="openSlotPopup('${slot.id}')" style="padding:6px 12px;border-radius:10px;border:1px solid var(--border);background:transparent;font-size:11px;color:var(--text2);cursor:pointer;font-weight:600;">편집</button>
+          <button onclick="openSlotPopup('${slot.id}')" style="flex-shrink:0;padding:6px 12px;border-radius:10px;border:1px solid var(--border);background:transparent;font-size:11px;color:var(--text2);cursor:pointer;font-weight:600;">편집</button>
         </div>
+        <!-- 5가지 선택지 -->
         <div style="display:flex;flex-direction:column;gap:6px;">
           <button onclick="publishSlotToInstagram('${slot.id}')" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:800;cursor:pointer;">📸 인스타에 올리기</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <button onclick="_saveSlotToGallery('${slot.id}')" style="padding:10px;border-radius:10px;border:1.5px solid rgba(241,128,145,0.3);background:transparent;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;">📁 갤러리에만 보관</button>
+            <button onclick="downloadSlotPhotos('${slot.id}')" style="padding:10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">📥 내 폰에 저장</button>
+          </div>
           <div style="display:flex;gap:6px;">
-            <button onclick="writeSlotCaption('${slot.id}')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid rgba(241,128,145,0.3);background:transparent;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;">✍️ 글쓰기</button>
-            <button onclick="downloadSlotPhotos('${slot.id}')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">📥 저장</button>
-            <button onclick="_saveSlotToGallery('${slot.id}')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid rgba(241,128,145,0.3);background:transparent;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;">📁 갤러리</button>
-            <button onclick="deleteSlotFinish('${slot.id}')" style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;">삭제</button>
+            <button onclick="_deferSlot('${slot.id}')" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid rgba(255,193,7,0.5);background:transparent;color:#f57c00;font-size:11px;font-weight:700;cursor:pointer;">🕐 나중에</button>
+            <button onclick="deleteSlotFinish('${slot.id}')" style="padding:8px 14px;border-radius:10px;border:1.5px solid rgba(220,53,69,0.3);background:transparent;color:#dc3545;font-size:11px;cursor:pointer;font-weight:600;">삭제</button>
+            <button onclick="showToast('슬롯이 유지돼요 🌸')" style="padding:8px 14px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;">취소</button>
           </div>
         </div>
       </div>
@@ -1446,14 +1457,20 @@ async function _saveSlotToGallery(slotId) {
   try {
     await saveToGallery(slot);
     showToast('갤러리에 보관됐어요 📁');
-    initFinishTab(); // 갤러리 섹션 새로고침
+    initFinishTab();
+    // AI 추천 탭이 열려있으면 갱신
+    const aiTab = document.getElementById('tab-ai-suggest');
+    if (aiTab && aiTab.classList.contains('active') && typeof initAiRecommendTab === 'function') {
+      initAiRecommendTab();
+    }
   } catch(e) { showToast('저장 실패: ' + e.message); }
 }
 
 async function publishSlotToInstagram(slotId) {
   const slot = _slots.find(s => s.id === slotId);
   if (!slot?.photos.length) { showToast('사진이 없어요'); return; }
-  const photo      = slot.photos[0];
+  const visPhotos = slot.photos.filter(p => !p.hidden);
+  const photo = visPhotos[0] || slot.photos[0];
   const fullCaption = (slot.caption || '') + (slot.hashtags ? '\n\n' + slot.hashtags : '');
   try {
     const blob = _dataUrlToBlob(photo.editedDataUrl || photo.dataUrl);
@@ -1467,12 +1484,26 @@ async function publishSlotToInstagram(slotId) {
     const upData = await upRes.json();
     const imgUrl = upData.image_url?.startsWith('http') ? upData.image_url : API + (upData.image_url || '');
     if (typeof doInstagramPublish === 'function') {
-      await doInstagramPublish(imgUrl, fullCaption);
-      slot.status = 'done';
-      await saveSlotToDB(slot);
-      initFinishTab();
+      const success = await doInstagramPublish(imgUrl, fullCaption);
+      if (success) {
+        slot.instagramPublished = true;
+        slot.deferredAt = null;
+        await saveSlotToDB(slot);
+        // 갤러리 자동 저장
+        try { await saveToGallery(slot); } catch(_e) {}
+        initFinishTab();
+      }
     }
   } catch(e) { showToast('오류: ' + e.message); }
+}
+
+async function _deferSlot(slotId) {
+  const slot = _slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot.deferredAt = Date.now();
+  try { await saveSlotToDB(slot); } catch(_e) {}
+  showToast('AI 추천 탭에서 다시 볼 수 있어요 🕐');
+  initFinishTab();
 }
 
 function writeSlotCaption(slotId) {

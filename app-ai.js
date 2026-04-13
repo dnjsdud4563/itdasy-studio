@@ -1,155 +1,154 @@
-// Itdasy Studio - AI 추천 & 예약 송출
+// Itdasy Studio - AI 추천 탭 (갤러리/미발행 슬롯 연동)
 
 // =====================================================================
-// ===== AI 추천 탭 (3-B) =====
+// ===== AI 추천 탭 — 미발행 슬롯 카드 =====
 // =====================================================================
-let _aiSuggestData = null;
-let _lastAiPickedId = null;
+let _aiRecommendChecked = new Set();
 
-// AI 추천 단계 체크리스트 애니메이션
-let _aiStepTimers = [];
+async function initAiRecommendTab() {
+  const root = document.getElementById('tab-ai-suggest');
+  if (!root) return;
 
-function _resetAiSteps() {
-  _aiStepTimers.forEach(t => clearTimeout(t)); _aiStepTimers = [];
-  [0,1,2,3].forEach(i => {
-    const row = document.getElementById('aiStep' + i);
-    if (row) { row.classList.remove('active','done'); const ind = row.querySelector('.ai-step-indicator'); if (ind) ind.textContent = ''; }
+  let slots = [];
+  try { slots = await loadSlotsFromDB(); } catch(_e) {}
+
+  // 미발행 슬롯: done 상태 + instagramPublished !== true + 사진 있음
+  const unpublished = slots.filter(s =>
+    s.status === 'done' && !s.instagramPublished && s.photos.length > 0
+  );
+
+  // 정렬: ① 나중에 선택(deferred) 오래된 순 우선 → ② 사진+캡션 완성 오래된 순 → ③ 나머지 오래된 순
+  unpublished.sort((a, b) => {
+    const aDeferred = !!a.deferredAt;
+    const bDeferred = !!b.deferredAt;
+    if (aDeferred !== bDeferred) return aDeferred ? -1 : 1;
+    if (aDeferred && bDeferred) return (a.deferredAt || 0) - (b.deferredAt || 0);
+
+    const aComplete = a.photos.length > 0 && !!a.caption;
+    const bComplete = b.photos.length > 0 && !!b.caption;
+    if (aComplete !== bComplete) return aComplete ? -1 : 1;
+
+    return (a.createdAt || a.order || 0) - (b.createdAt || b.order || 0);
   });
+
+  _aiRecommendChecked.clear();
+  _renderAiRecommendTab(root, unpublished);
 }
 
-function _activateAiStep(idx) {
-  const row = document.getElementById('aiStep' + idx);
-  if (!row) return;
-  // 이전 단계 완료 처리
-  if (idx > 0) {
-    const prev = document.getElementById('aiStep' + (idx - 1));
-    if (prev) {
-      prev.classList.remove('active');
-      prev.classList.add('done');
-      const ind = prev.querySelector('.ai-step-indicator');
-      if (ind) ind.textContent = '✓';
-    }
+function _renderAiRecommendTab(root, slots) {
+  if (!slots.length) {
+    root.innerHTML = `
+      <div class="sec-title" style="margin-bottom:4px;">AI 추천 ✨</div>
+      <div style="text-align:center;padding:60px 20px;">
+        <div style="font-size:40px;margin-bottom:12px;">🌸</div>
+        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:6px;">올릴 게 없어요!</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">오늘 작업하러 가볼까요?</div>
+        <button onclick="showTab('workshop',document.querySelectorAll('.nav-btn')[1]); initWorkshopTab();" style="padding:12px 24px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:800;cursor:pointer;">작업실로 →</button>
+      </div>`;
+    return;
   }
-  row.classList.add('active');
+
+  const cardsHtml = slots.map(slot => {
+    const visPhotos = slot.photos.filter(p => !p.hidden);
+    const thumb = visPhotos[0] || slot.photos[0];
+    const thumbSrc = thumb ? (thumb.editedDataUrl || thumb.dataUrl) : '';
+    const capPreview = slot.caption
+      ? slot.caption.slice(0, 50) + (slot.caption.length > 50 ? '…' : '')
+      : '(캡션 없음)';
+    const dateStr = slot.createdAt
+      ? new Date(slot.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+      : (slot.deferredAt ? new Date(slot.deferredAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }) : '');
+    const isChecked = _aiRecommendChecked.has(slot.id);
+    const isDeferred = !!slot.deferredAt;
+
+    return `
+      <div data-ai-card="${slot.id}" style="background:#fff;border:1.5px solid ${isChecked ? 'var(--accent)' : isDeferred ? 'rgba(255,193,7,0.4)' : 'rgba(241,128,145,0.2)'};border-radius:16px;padding:12px;margin-bottom:10px;position:relative;">
+        <!-- 체크박스 -->
+        <div onclick="_toggleAiCheck('${slot.id}',event)" style="position:absolute;top:12px;left:12px;z-index:2;width:20px;height:20px;border-radius:5px;border:2px solid ${isChecked ? 'var(--accent)' : 'rgba(0,0,0,0.2)'};background:${isChecked ? 'var(--accent)' : 'rgba(255,255,255,0.9)'};display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;cursor:pointer;">${isChecked ? '✓' : ''}</div>
+        <!-- 삭제 버튼 -->
+        <button onclick="_deleteAiSlot('${slot.id}',event)" style="position:absolute;top:10px;right:10px;background:transparent;border:none;font-size:16px;color:var(--text3);cursor:pointer;line-height:1;padding:2px 6px;">✕</button>
+        <!-- 카드 본문: 탭 → 마무리 탭으로 -->
+        <div onclick="_goToFinishSlot('${slot.id}')" style="display:flex;gap:12px;align-items:center;cursor:pointer;padding:0 24px 0 28px;">
+          ${thumbSrc
+            ? `<img src="${thumbSrc}" style="width:72px;height:72px;object-fit:cover;border-radius:10px;flex-shrink:0;">`
+            : `<div style="width:72px;height:72px;border-radius:10px;background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;">📷</div>`}
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;">
+              <div style="font-size:13px;font-weight:800;color:var(--text);">${slot.label}</div>
+              ${slot.caption ? '<div style="font-size:9px;background:rgba(76,175,80,0.15);color:#388e3c;border-radius:4px;padding:1px 5px;font-weight:700;">캡션✓</div>' : ''}
+              ${isDeferred ? '<div style="font-size:9px;background:rgba(255,193,7,0.2);color:#f57c00;border-radius:4px;padding:1px 5px;font-weight:700;">나중에</div>' : ''}
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">${visPhotos.length}장 · ${dateStr}</div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${capPreview}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  root.innerHTML = `
+    <div class="sec-title" style="margin-bottom:4px;">AI 추천 ✨</div>
+    <div class="sec-sub" style="margin-bottom:16px;">미발행 ${slots.length}개 · 탭하면 마무리로 이동해요</div>
+    ${cardsHtml}
+    <div id="aiRecommendBatchBar" style="display:none;position:fixed;bottom:65px;left:0;right:0;z-index:200;padding:10px 16px;background:rgba(255,255,255,0.97);backdrop-filter:blur(8px);border-top:1px solid var(--border);box-shadow:0 -2px 16px rgba(0,0,0,0.1);">
+      <button onclick="_batchDeleteAiSlots()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#dc3545,#c82333);color:#fff;font-size:13px;font-weight:800;cursor:pointer;">선택한 작업 삭제</button>
+    </div>`;
 }
 
-function _completeAllAiSteps() {
-  [0,1,2,3].forEach(i => {
-    const row = document.getElementById('aiStep' + i);
-    if (row) {
-      row.classList.remove('active');
-      row.classList.add('done');
-      const ind = row.querySelector('.ai-step-indicator');
-      if (ind) ind.textContent = '✓';
+function _toggleAiCheck(id, e) {
+  e?.stopPropagation();
+  _aiRecommendChecked.has(id) ? _aiRecommendChecked.delete(id) : _aiRecommendChecked.add(id);
+  const bar = document.getElementById('aiRecommendBatchBar');
+  if (bar) bar.style.display = _aiRecommendChecked.size > 0 ? 'block' : 'none';
+  // 카드 border 색상만 업데이트
+  document.querySelectorAll('[data-ai-card]').forEach(card => {
+    const cardId = card.dataset.aiCard;
+    const checked = _aiRecommendChecked.has(cardId);
+    const slot = (typeof _slots !== 'undefined' ? _slots : []).find(s => s.id === cardId);
+    const isDeferred = slot?.deferredAt;
+    card.style.borderColor = checked ? 'var(--accent)' : isDeferred ? 'rgba(255,193,7,0.4)' : 'rgba(241,128,145,0.2)';
+    const cb = card.querySelector('[onclick^="_toggleAiCheck"]');
+    if (cb) {
+      cb.style.borderColor = checked ? 'var(--accent)' : 'rgba(0,0,0,0.2)';
+      cb.style.background = checked ? 'var(--accent)' : 'rgba(255,255,255,0.9)';
+      cb.textContent = checked ? '✓' : '';
     }
   });
 }
 
-function _startAiStepAnimation() {
-  _resetAiSteps();
-  _activateAiStep(0);
-  // 단계 1→2→3은 시간 기반으로 순차 활성화 (API 응답까지 자연스럽게 진행)
-  _aiStepTimers.push(setTimeout(() => _activateAiStep(1), 900));
-  _aiStepTimers.push(setTimeout(() => _activateAiStep(2), 2000));
-  _aiStepTimers.push(setTimeout(() => _activateAiStep(3), 3200));
-}
-
-async function loadAiSuggest(itemId) {
-  if (!getToken()) return;
-  _lastAiPickedId = itemId || null;
-  const loading = document.getElementById('aiSuggestLoading');
-  const card    = document.getElementById('aiSuggestCard');
-  const errDiv  = document.getElementById('aiSuggestError');
-  const emptyEl = document.getElementById('aiSuggestPickerEmpty');
-  if (!loading) return;
-  loading.style.display = 'block';
-  card.style.display    = 'none';
-  if (errDiv) errDiv.style.display = 'none';
-  if (emptyEl) emptyEl.style.display = 'none';
-
-  _startAiStepAnimation();
-
+async function _deleteAiSlot(id, e) {
+  e?.stopPropagation();
+  if (!confirm('이 작업을 삭제할까요?')) return;
   try {
-    const url = API + '/portfolio/ai-suggest' + (itemId ? `?item_id=${itemId}` : '');
-    const res = await fetch(url, { headers: { ...authHeader(), 'ngrok-skip-browser-warning': 'true' } });
-    _aiStepTimers.forEach(t => clearTimeout(t)); _aiStepTimers = [];
-    _completeAllAiSteps();
-    await new Promise(r => setTimeout(r, 400)); // 완료 시각 효과 잠깐 보여줌
-    loading.style.display = 'none';
+    await deleteSlotFromDB(id);
+    if (typeof _slots !== 'undefined') _slots = _slots.filter(s => s.id !== id);
+  } catch(_e) {}
+  _aiRecommendChecked.delete(id);
+  initAiRecommendTab();
+}
 
-    if (res.status === 404) {
-      if (emptyEl) emptyEl.style.display = 'block';
-      return;
-    }
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      document.getElementById('aiSuggestErrorMsg').textContent = errData.detail || '잠시 후 다시 시도해주세요';
-      if (errDiv) errDiv.style.display = 'block';
-      return;
-    }
-
-    const data = await res.json();
-    _aiSuggestData = data;
-
-    const img = document.getElementById('aiSuggestImg');
-    const imgSrc = data.image_url
-      ? (data.image_url.startsWith('http') ? data.image_url : API + data.image_url)
-      : '';
-    img.src = imgSrc;
-    img.style.display = imgSrc ? 'block' : 'none';
-
-    // 태그 뱃지
-    const badge = document.getElementById('aiSuggestTagBadge');
-    badge.innerHTML = '';
-    const allTags = [data.main_tag, data.tags].filter(Boolean).join(',').split(',').map(t=>t.trim()).filter(Boolean);
-    allTags.slice(0,3).forEach(t => {
-      const span = document.createElement('span');
-      span.style.cssText = 'background:rgba(255,255,255,0.35); backdrop-filter:blur(4px); border-radius:20px; padding:2px 8px; font-size:9px; color:#fff; font-weight:700;';
-      span.textContent = t;
-      badge.appendChild(span);
-    });
-
-    document.getElementById('aiSuggestCaption').textContent = data.caption || '';
-    const hashArr = Array.isArray(data.hashtags) ? data.hashtags : [];
-    document.getElementById('aiSuggestHash').textContent = hashArr.map(h => h.startsWith('#') ? h : '#'+h).join(' ');
-
-    card.style.display = 'block';
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  } catch(e) {
-    _aiStepTimers.forEach(t => clearTimeout(t)); _aiStepTimers = [];
-    loading.style.display = 'none';
-    if (errDiv) {
-      document.getElementById('aiSuggestErrorMsg').textContent = e.message || '네트워크 오류';
-      errDiv.style.display = 'block';
-    }
+async function _batchDeleteAiSlots() {
+  if (!_aiRecommendChecked.size) return;
+  if (!confirm(`선택한 ${_aiRecommendChecked.size}개를 삭제할까요?`)) return;
+  for (const id of [..._aiRecommendChecked]) {
+    try { await deleteSlotFromDB(id); } catch(_e) {}
+    if (typeof _slots !== 'undefined') _slots = _slots.filter(s => s.id !== id);
   }
+  _aiRecommendChecked.clear();
+  initAiRecommendTab();
 }
 
-function aiSuggestRetry() {
-  loadAiSuggest(_lastAiPickedId);
+function _goToFinishSlot(slotId) {
+  showTab('finish', document.querySelectorAll('.nav-btn')[4]);
+  initFinishTab().catch ? initFinishTab().catch(() => {}) : setTimeout(initFinishTab, 0);
+  setTimeout(() => {
+    const el = document.querySelector(`[data-finish-slot="${slotId}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 350);
 }
 
-function copyAiSuggest() {
-  if (!_aiSuggestData) return;
-  const cap = document.getElementById('aiSuggestCaption').textContent.trim();
-  const hash = document.getElementById('aiSuggestHash').textContent.trim();
-  navigator.clipboard.writeText(cap + (hash ? '\n\n' + hash : '')).catch(() => {});
-  showToast('글 복사 완료 📋');
-}
-
-async function publishAiSuggestDirect() {
-  if (!_aiSuggestData) return;
-  const imgSrc = _aiSuggestData.image_url
-    ? (_aiSuggestData.image_url.startsWith('http') ? _aiSuggestData.image_url : API + _aiSuggestData.image_url)
-    : '';
-  const cap = document.getElementById('aiSuggestCaption').textContent.trim();
-  const hash = document.getElementById('aiSuggestHash').textContent.trim();
-  const fullCaption = cap + (hash ? '\n\n' + hash : '');
-  if (!imgSrc) { showToast('이미지가 없어요'); return; }
-  // 인스타 업로드 플로우 위임
-  await doInstagramPublish(imgSrc, fullCaption);
-}
-
+// =====================================================================
+// ===== 인스타그램 발행 공용 헬퍼 (app-gallery.js 등에서 호출) =====
+// =====================================================================
 async function doInstagramPublish(imageUrl, captionText) {
   const upPopup = document.getElementById('uploadProgressPopup');
   try {
@@ -165,54 +164,31 @@ async function doInstagramPublish(imageUrl, captionText) {
       const err = await res.json().catch(() => ({}));
       upPopup.style.display = 'none';
       showToast('업로드 실패: ' + (err.detail || '인스타 연결을 확인해주세요'));
-      return;
+      return false;
     }
     upPopup.style.display = 'none';
     const donePopup = document.getElementById('uploadDonePopup');
     const doneMsg = document.getElementById('uploadDoneMsg');
-    if (doneMsg) doneMsg.textContent = 'AI 추천 게시물이 인스타에 올라갔어요! 🎀';
+    if (doneMsg) doneMsg.textContent = '인스타 피드에 올라갔어요 ✨';
     if (donePopup) donePopup.style.display = 'flex';
+    return true;
   } catch(e) {
     upPopup.style.display = 'none';
     showToast('업로드 오류: ' + e.message);
+    return false;
   }
 }
 
-function goToCaption() {
-  if (!_aiSuggestData) return;
-  const cap = document.getElementById('aiSuggestCaption').textContent.trim();
-  const hash = document.getElementById('aiSuggestHash').textContent.trim();
-  showTab('caption', document.querySelector('.nav-btn[onclick*="caption"]'));
-  setTimeout(() => {
-    const captionEl = document.getElementById('captionText');
-    const hashEl = document.getElementById('captionHash');
-    const resultEl = document.getElementById('captionResult');
-    if (captionEl) captionEl.textContent = cap;
-    if (hashEl) hashEl.textContent = hash;
-    if (resultEl) resultEl.style.display = 'block';
-  }, 100);
-}
-
 // =====================================================================
-// ===== 예약 송출 (3-C) =====
+// ===== 예약 송출 =====
 // =====================================================================
-function showSchedulePanel() {
-  const r = document.getElementById('captionResult');
-  if (r && r.style.display !== 'none') {
-    document.getElementById('scheduleToggleBtn').style.display = 'block';
-  }
-}
-
 async function createSchedule() {
-  const dt = document.getElementById('scheduleDateTime').value;
+  const dt = document.getElementById('scheduleDateTime')?.value;
   if (!dt) { showToast('날짜와 시간을 선택해주세요!'); return; }
-  const caption = document.getElementById('captionText').value || '';
-  const hash = document.getElementById('captionHash').value || '';
+  const caption = document.getElementById('captionText')?.value || '';
+  const hash = document.getElementById('captionHash')?.value || '';
   const hashtags = hash.replace(/#/g, '').split(/\s+/).filter(Boolean).join(',');
-
-  // 이미지 URL: 현재 편집된 이미지가 있으면 사용, 없으면 빈 값으로 예약만 등록
   const imageUrl = window._lastPublishedImageUrl || '';
-
   try {
     const res = await fetch(API + '/schedule', {
       method: 'POST',
@@ -220,18 +196,17 @@ async function createSchedule() {
       body: JSON.stringify({
         image_url: imageUrl,
         caption: caption.trim(),
-        hashtags: hashtags,
+        hashtags,
         scheduled_at: new Date(dt).toISOString(),
       }),
     });
     if (!res.ok) throw new Error((await res.json()).detail || '예약 실패');
-    document.getElementById('schedulePanel').style.display = 'none';
-    document.getElementById('scheduleToggleBtn').style.display = 'none';
+    const panel = document.getElementById('schedulePanel');
+    if (panel) panel.style.display = 'none';
+    const btn = document.getElementById('scheduleToggleBtn');
+    if (btn) btn.style.display = 'none';
     showToast('예약 등록됐어요! ⏰ ' + dt.replace('T', ' '));
   } catch(e) {
     showToast('예약 실패: ' + e.message);
   }
 }
-
-// 캡션 생성 완료 후 예약 버튼 노출
-const _origGenerateCaptionEnd = window.generateCaption;
