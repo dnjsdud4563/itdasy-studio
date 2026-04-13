@@ -2688,5 +2688,6 @@ async function deleteSlotFinish(slotId) {
   if (!confirm('슬롯을 삭제할까요?')) return;
   _slots = _slots.filter(s => s.id !== slotId);
   try { await deleteSlotFromDB(slotId); } catch(_e) {}
+  await _renumberSlots();
   initFinishTab();
 }
