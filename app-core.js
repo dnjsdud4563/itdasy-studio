@@ -164,7 +164,7 @@ function updateHomeQuestion() {
 }
 
 function goCaption() {
-  showTab('caption', document.querySelectorAll('.nav-btn')[1]);
+  showTab('caption', document.querySelectorAll('.nav-btn')[2]);
 }
 
 function selectShopType(card) {

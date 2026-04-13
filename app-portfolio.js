@@ -933,3 +933,91 @@ async function applyFaceBlur(checked) {
     document.getElementById('faceBlurCheck').checked = false;
   }
 }
+
+// ═══════════════════════════════════════════════════════
+// 공유 캔버스 유틸 — app-gallery.js에서도 사용
+// ═══════════════════════════════════════════════════════
+
+/**
+ * /image/remove-bg 결과 personImg를 배경 위에 합성해 canvas에 그린다.
+ * @param {HTMLCanvasElement} canvas
+ * @param {HTMLImageElement}  personImg  — 배경 제거된 PNG img 엘리먼트
+ * @param {number} W
+ * @param {number} H
+ * @param {string} bgMode  — cloud_bw | cloud_color | mosaic | pink | white | custom
+ * @param {string|null} customBgUrl
+ */
+async function compositePersonOnCanvas(canvas, personImg, W, H, bgMode, customBgUrl) {
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  if (customBgUrl) {
+    const blobRes = await fetch(customBgUrl, { headers: authHeader() });
+    if (!blobRes.ok) throw new Error('배경 이미지 로드 실패');
+    const blobData = await blobRes.blob();
+    const blobObjUrl = URL.createObjectURL(blobData);
+    const bgImg = await _loadImageSrc(blobObjUrl);
+    URL.revokeObjectURL(blobObjUrl);
+    _drawCoverCtx(ctx, bgImg, 0, 0, W, H);
+  } else if (bgMode === 'mosaic') {
+    _drawCoverCtx(ctx, personImg, 0, 0, W, H);
+    const PIXEL = 28;
+    const cols = Math.ceil(W / PIXEL), rows = Math.ceil(H / PIXEL);
+    const tmp = document.createElement('canvas');
+    tmp.width = cols; tmp.height = rows;
+    tmp.getContext('2d').drawImage(canvas, 0, 0, W, H, 0, 0, cols, rows);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(tmp, 0, 0, cols, rows, 0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    const bgImg = await getCloudBg(W, H, bgMode);
+    ctx.drawImage(bgImg, 0, 0, W, H);
+  }
+
+  // 인물 배치
+  const scale = Math.min(W / personImg.width, H / personImg.height) * 0.92;
+  const pw = personImg.width * scale, ph = personImg.height * scale;
+  ctx.drawImage(personImg, (W - pw) / 2, H - ph - H * 0.02, pw, ph);
+}
+
+/**
+ * Before / After 좌우 분할 합성
+ * @param {HTMLCanvasElement} canvas
+ * @param {HTMLImageElement} beforeImg
+ * @param {HTMLImageElement} afterImg
+ * @param {number} W
+ * @param {number} H
+ */
+function renderBASplit(canvas, beforeImg, afterImg, W, H) {
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  _drawCoverCtx(ctx, beforeImg, 0, 0, W / 2, H);
+  _drawCoverCtx(ctx, afterImg,  W / 2, 0, W / 2, H);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(W / 2 - 1, 0, 2, H);
+  ctx.font = 'bold 32px "Noto Sans KR", sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.textAlign = 'center';
+  ctx.fillText('BEFORE', W / 4, H - 30);
+  ctx.fillText('AFTER',  W * 3 / 4, H - 30);
+}
+
+/** cover-fit 드로우 헬퍼 */
+function _drawCoverCtx(ctx, img, x, y, w, h) {
+  const scale = Math.max(w / img.width, h / img.height);
+  const sw = w / scale, sh = h / scale;
+  const sx = (img.width - sw) / 2, sy = (img.height - sh) / 2;
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+/** src → HTMLImageElement */
+function _loadImageSrc(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
