@@ -232,7 +232,18 @@ document.getElementById('obShopNameInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') obNext();
 });
 
-function getToken() { return localStorage.getItem('itdasy_token'); }
+function getToken() {
+  const t = localStorage.getItem('itdasy_token');
+  if (!t) return null;
+  try {
+    const payload = JSON.parse(atob(t.split('.')[1]));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      localStorage.removeItem('itdasy_token');
+      return null;
+    }
+  } catch { return null; }
+  return t;
+}
 function setToken(t) { localStorage.setItem('itdasy_token', t); }
 function authHeader() { return { 'Authorization': 'Bearer ' + getToken(), 'ngrok-skip-browser-warning': 'true' }; }
 
