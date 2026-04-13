@@ -139,15 +139,6 @@ function showCaptionLoader() {
   }, 1600);
   _slotTimers.push(_clMsgTimer);
 
-  // 로딩 중 릴 순차 자동 잠금 — 페르소나 키워드로 맞춰지는 효과
-  const _autoLockWords = [
-    _personaFinalWords[0] || SLOT_KEYWORDS[0][Math.floor(Math.random() * SLOT_KEYWORDS[0].length)],
-    _personaFinalWords[1] || SLOT_KEYWORDS[1][Math.floor(Math.random() * SLOT_KEYWORDS[1].length)],
-    _personaFinalWords[2] || SLOT_KEYWORDS[2][Math.floor(Math.random() * SLOT_KEYWORDS[2].length)],
-  ];
-  _slotTimers.push(setTimeout(() => { if (!_slotLocked[0]) _lockReel(0, _autoLockWords[0]); }, 1800));
-  _slotTimers.push(setTimeout(() => { if (!_slotLocked[1]) _lockReel(1, _autoLockWords[1]); }, 3000));
-  _slotTimers.push(setTimeout(() => { if (!_slotLocked[2]) _lockReel(2, _autoLockWords[2]); }, 4200));
 }
 
 function hideCaptionLoader(success, onClose) {
