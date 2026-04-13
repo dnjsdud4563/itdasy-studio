@@ -1,5 +1,40 @@
 // Itdasy Studio - 캡션 생성 (슬롯머신, 톤 컨트롤, 해시태그)
 
+// ═══════════════════════════════════════════════════════
+// 업종별 기본 키워드 config
+// ═══════════════════════════════════════════════════════
+const SHOP_KEYWORDS = {
+  '붙임머리': ['14인치','18인치','22인치','24인치','26인치','28인치','30인치','특수인치','옴브레','재시술','볼륨업','자연스러운','롱헤어'],
+  '네일아트': ['젤네일','아트','프렌치','이달의아트','글리터','원톤','그라데이션','스톤','매트','자개'],
+  '네일': ['젤네일','아트','프렌치','이달의아트','글리터','원톤','그라데이션','스톤','매트','자개'],
+};
+
+// 사용자 커스텀 키워드 (localStorage)
+function _loadCustomKeywords() {
+  try { return JSON.parse(localStorage.getItem('itdasy_custom_keywords') || '[]'); } catch(_) { return []; }
+}
+function _saveCustomKeywords(arr) {
+  localStorage.setItem('itdasy_custom_keywords', JSON.stringify(arr));
+}
+
+// 삭제된 기본 키워드 (localStorage)
+function _loadDeletedKeywords() {
+  try { return JSON.parse(localStorage.getItem('itdasy_deleted_keywords') || '[]'); } catch(_) { return []; }
+}
+function _saveDeletedKeywords(arr) {
+  localStorage.setItem('itdasy_deleted_keywords', JSON.stringify(arr));
+}
+
+// 현재 업종에 맞는 키워드 목록 반환 (기본 - 삭제 + 커스텀)
+function getShopKeywords() {
+  const shopType = localStorage.getItem('shop_type') || '붙임머리';
+  const base = SHOP_KEYWORDS[shopType] || SHOP_KEYWORDS['붙임머리'];
+  const deleted = _loadDeletedKeywords();
+  const custom = _loadCustomKeywords();
+  const filtered = base.filter(k => !deleted.includes(k));
+  return [...new Set([...filtered, ...custom])];
+}
+
 // ===== 해시태그 셔플 믹싱 =====
 // 이전에 사용한 태그 순서 기록 → 매번 다른 조합·순서로 노출
 function shuffleHashtags(tags) {
@@ -429,11 +464,70 @@ async function toggleCaptionPortfolioPicker() {
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// 캡션 입력 UI 렌더링 (동적 키워드 태그)
+// ═══════════════════════════════════════════════════════
+function renderCaptionKeywordTags() {
+  const container = document.getElementById('typeTags');
+  if (!container) return;
+
+  const keywords = getShopKeywords();
+  const deleted = _loadDeletedKeywords();
+
+  container.innerHTML = keywords.map(k =>
+    `<span class="tag" data-v="${k}" onclick="toggleCaptionTag(this)">${k}<button class="tag-delete" onclick="deleteCaptionKeyword('${k}',event)">×</button></span>`
+  ).join('') + `<span class="tag tag-add" onclick="showAddKeywordInput()">+ 추가</span>`;
+}
+
+function toggleCaptionTag(el) {
+  if (el.classList.contains('tag-add')) return;
+  el.classList.toggle('on');
+}
+
+function deleteCaptionKeyword(keyword, e) {
+  e.stopPropagation();
+  const base = SHOP_KEYWORDS[localStorage.getItem('shop_type') || '붙임머리'] || [];
+  if (base.includes(keyword)) {
+    // 기본 키워드는 삭제 목록에 추가
+    const deleted = _loadDeletedKeywords();
+    if (!deleted.includes(keyword)) {
+      deleted.push(keyword);
+      _saveDeletedKeywords(deleted);
+    }
+  } else {
+    // 커스텀 키워드는 직접 삭제
+    const custom = _loadCustomKeywords();
+    _saveCustomKeywords(custom.filter(k => k !== keyword));
+  }
+  renderCaptionKeywordTags();
+}
+
+function showAddKeywordInput() {
+  const keyword = prompt('추가할 키워드를 입력하세요:');
+  if (!keyword || !keyword.trim()) return;
+  const trimmed = keyword.trim();
+  const custom = _loadCustomKeywords();
+  if (!custom.includes(trimmed)) {
+    custom.push(trimmed);
+    _saveCustomKeywords(custom);
+  }
+  // 삭제 목록에서도 제거 (복원)
+  const deleted = _loadDeletedKeywords();
+  _saveDeletedKeywords(deleted.filter(k => k !== trimmed));
+  renderCaptionKeywordTags();
+  // 새로 추가된 태그 자동 선택
+  setTimeout(() => {
+    const tag = document.querySelector(`#typeTags .tag[data-v="${trimmed}"]`);
+    if (tag) tag.classList.add('on');
+  }, 50);
+}
+
 // ===== 캡션 생성 =====
 async function generateCaption() {
   const types = getSel('typeTags');
 
   const memo = document.getElementById('captionMemo').value;
+  const situation = document.getElementById('captionSituation')?.value || '';
   const btn = document.getElementById('captionBtn');
   btn.disabled = true;
 
@@ -447,7 +541,8 @@ async function generateCaption() {
   const slotNote = (typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined')
     ? (() => { const s = _slots.find(sl => sl.id === _captionSlotId); return s ? `손님: ${s.label}. 사진 ${s.photos.filter(p=>!p.hidden).length}장. ` : ''; })()
     : '';
-  const description = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 업종: ${shopType}. ${slotNote}${memo || ''}`;
+  const situationNote = situation ? `손님상황: ${situation}. ` : '';
+  const description = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 업종: ${shopType}. ${slotNote}${situationNote}${memo || ''}`;
 
   try {
     const res = await fetch(API + '/caption/generate', {
@@ -472,12 +567,23 @@ async function generateCaption() {
       document.getElementById('captionText').value = finalCaption;
       document.getElementById('captionHash').value = hashes;
       document.getElementById('captionResult').style.display = 'block';
-      const actionBar = document.getElementById('captionActionBar');
-      if (actionBar) actionBar.style.display = 'flex';
+
+      // 저장된 캡션 데이터를 슬롯에 연결
+      if (typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined') {
+        const slot = _slots.find(s => s.id === _captionSlotId);
+        if (slot) {
+          slot.caption = finalCaption;
+          slot.hashtags = hashes;
+          if (typeof saveSlotToDB === 'function') saveSlotToDB(slot).catch(() => {});
+        }
+      }
+
+      // 액션바 렌더링 (갤러리 저장 + 다음 손님 유도)
+      _renderCaptionActionBar(finalCaption, hashes);
       btn.innerHTML = '다시 만들기 ✨';
       btn.disabled = false;
 
-      // 인라인 미리보기: 선택된 슬롯 사진 + 생성된 캡션
+      // 인라인 미리보기: 인스타그램 피드 스타일
       const inlinePrev = document.getElementById('captionInlinePreview');
       if (inlinePrev && typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined') {
         const slot = _slots.find(s => s.id === _captionSlotId);
@@ -487,14 +593,39 @@ async function generateCaption() {
           const previewId = 'inl_carousel';
           inlinePrev.style.display = 'block';
           inlinePrev.innerHTML = `
-            <div style="display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #f0f0f0;">
-              <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800;">${shopName[0]}</div>
-              <div style="font-size:13px;font-weight:700;">${shopName}</div>
+            <div style="background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;margin:0 -4px;">
+              <!-- 상단: 프로필 + 팔로우 -->
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);padding:2px;">
+                    <div style="width:100%;height:100%;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;">
+                      <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;">${shopName[0]}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:13px;font-weight:600;color:#262626;">${shopName}</div>
+                </div>
+                <button style="padding:6px 16px;border-radius:8px;border:none;background:#0095f6;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">팔로우</button>
+              </div>
+              <!-- 중단: 사진 캐러셀 -->
+              <div style="background:#fafafa;">${typeof _buildInstaCarousel === 'function' ? _buildInstaCarousel(photos, previewId) : (typeof _buildPeekCarousel === 'function' ? _buildPeekCarousel(photos, previewId) : '')}</div>
+              <!-- 하단: 아이콘 + 캡션 -->
+              <div style="padding:0 12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 8px;">
+                  <div style="display:flex;gap:16px;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                  </div>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div style="font-size:13px;color:#262626;line-height:1.5;padding-bottom:12px;">
+                  <span style="font-weight:600;">${shopName}</span> ${finalCaption.slice(0,100)}${finalCaption.length>100?'<span style="color:#8e8e8e;">...더 보기</span>':''}
+                </div>
+              </div>
             </div>
-            <div style="padding:10px 0 6px;">${typeof _buildPeekCarousel === 'function' ? _buildPeekCarousel(photos, previewId) : ''}</div>
-            <div style="padding:6px 12px 14px;font-size:12px;color:#333;line-height:1.6;max-height:80px;overflow:hidden;text-overflow:ellipsis;">${finalCaption.slice(0,120)}${finalCaption.length>120?'…':''}</div>
           `;
-          if (typeof _initPeekCarousel === 'function') setTimeout(() => _initPeekCarousel(previewId, photos.length), 80);
+          if (typeof _initInstaCarousel === 'function') setTimeout(() => _initInstaCarousel(previewId, photos.length), 80);
+          else if (typeof _initPeekCarousel === 'function') setTimeout(() => _initPeekCarousel(previewId, photos.length), 80);
         }
       }
     });
@@ -820,4 +951,98 @@ function createConfetti() {
   c.style.animationDuration = Math.random() * 2 + 3 + 's';
   document.body.appendChild(c);
   setTimeout(() => c.remove(), 5000);
+}
+
+// ═══════════════════════════════════════════════════════
+// 캡션 완료 후 액션바 (갤러리 저장 + 다음 손님 유도)
+// ═══════════════════════════════════════════════════════
+function _renderCaptionActionBar(caption, hashtags) {
+  const actionBar = document.getElementById('captionActionBar');
+  if (!actionBar) return;
+
+  // 슬롯 진행 현황
+  let doneCount = 0, totalCount = 0, nextSlot = null;
+  if (typeof _slots !== 'undefined' && _slots.length > 0) {
+    doneCount = _slots.filter(s => s.status === 'done').length;
+    totalCount = _slots.length;
+    // 다음 미완료 슬롯 찾기
+    nextSlot = _slots.find(s => s.status !== 'done' && s.photos.length > 0);
+  }
+
+  const hasNextSlot = !!nextSlot;
+  const progressText = totalCount > 0 ? `(완료 ${doneCount}/${totalCount})` : '';
+
+  actionBar.style.display = 'block';
+  actionBar.innerHTML = `
+    <div style="background:rgba(76,175,80,0.08);border:1.5px solid rgba(76,175,80,0.25);border-radius:14px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:700;color:#388e3c;margin-bottom:10px;">✅ 캡션 생성 완료!</div>
+      <button onclick="saveCaptionToGallery()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#4caf50,#388e3c);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">📁 갤러리에 저장하기</button>
+    </div>
+    ${hasNextSlot ? `
+    <div style="background:rgba(241,128,145,0.07);border:1.5px solid rgba(241,128,145,0.2);border-radius:14px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">다음 손님 글 써볼까요? ${progressText}</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="goToNextSlotCaption('${nextSlot.id}')" style="flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:700;cursor:pointer;">${nextSlot.label} 글쓰기 →</button>
+        <button onclick="showTab('finish',document.querySelectorAll('.nav-btn')[4]); initFinishTab();" style="padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;">마무리로 →</button>
+      </div>
+    </div>
+    ` : `
+    <div style="display:flex;gap:8px;">
+      <button onclick="showTab('finish',document.querySelectorAll('.nav-btn')[4]); initFinishTab();" style="flex:1;padding:12px;border-radius:14px;border:1.5px solid rgba(241,128,145,0.3);background:transparent;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;">마무리로 이동 →</button>
+      <button onclick="publishFromCaption()" style="flex:1;padding:12px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:800;cursor:pointer;">지금 바로 올리기</button>
+    </div>
+    `}
+  `;
+}
+
+// 다음 슬롯으로 이동해서 캡션 작성
+function goToNextSlotCaption(slotId) {
+  if (typeof loadSlotForCaption === 'function') {
+    loadSlotForCaption(slotId);
+  }
+  // 입력 필드 초기화
+  document.getElementById('captionMemo').value = '';
+  const situation = document.getElementById('captionSituation');
+  if (situation) situation.value = '';
+  document.getElementById('captionResult').style.display = 'none';
+  document.getElementById('captionActionBar').style.display = 'none';
+  document.getElementById('captionBtn').innerHTML = '피드 글 작성하기 ✨';
+  // 태그 선택 해제
+  document.querySelectorAll('#typeTags .tag.on').forEach(t => t.classList.remove('on'));
+  // 스크롤 맨 위로
+  document.getElementById('tab-caption').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 갤러리에 캡션 저장
+async function saveCaptionToGallery() {
+  if (typeof _captionSlotId === 'undefined' || !_captionSlotId) {
+    showToast('먼저 작업실 슬롯을 선택해주세요');
+    return;
+  }
+  const slot = typeof _slots !== 'undefined' ? _slots.find(s => s.id === _captionSlotId) : null;
+  if (!slot) {
+    showToast('슬롯을 찾을 수 없어요');
+    return;
+  }
+
+  // 선택된 키워드를 태그로 변환
+  const selectedTags = getSel('typeTags');
+  slot.tags = selectedTags;
+  slot.caption = document.getElementById('captionText').value;
+  slot.hashtags = document.getElementById('captionHash').value;
+
+  try {
+    if (typeof saveToGallery === 'function') {
+      await saveToGallery(slot);
+    }
+    if (typeof saveSlotToDB === 'function') {
+      await saveSlotToDB(slot);
+    }
+    showToast('갤러리에 저장됐어요 📁');
+
+    // 저장 완료 후 다음 손님 유도 갱신
+    _renderCaptionActionBar(slot.caption, slot.hashtags);
+  } catch(e) {
+    showToast('저장 실패: ' + e.message);
+  }
 }
