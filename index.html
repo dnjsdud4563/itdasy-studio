@@ -165,7 +165,7 @@
 <div class="nav" id="nav">
   <button class="nav-btn active" onclick="showTab('home',this)">홈</button>
   <button class="nav-btn" onclick="showTab('workshop',this); initWorkshopTab()">작업실</button>
-  <button class="nav-btn" onclick="showTab('caption',this)">글쓰기</button>
+  <button class="nav-btn" onclick="showTab('caption',this); initCaptionSlotPicker()">글쓰기</button>
   <button class="nav-btn" onclick="showTab('finish',this); initFinishTab()">마무리</button>
 </div>
 
@@ -322,6 +322,9 @@
 <div class="tab" id="tab-caption">
   <div class="sec-title">피드 글 + 해시태그 생성</div>
   <div class="sec-sub">내 말투 그대로 AI가 대신 써드려요 🎀</div>
+
+  <!-- 작업실 슬롯 연동 피커 -->
+  <div id="captionSlotPicker" style="display:none; margin-bottom:12px;"></div>
 
   <div class="input-card">
     <label id="typeTagLabel">인치 선택</label>
