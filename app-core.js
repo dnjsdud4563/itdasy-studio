@@ -486,8 +486,13 @@ function closeQuickAction() {
 function showTab(id, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + id).classList.add('active');
-  btn.classList.add('active');
+  const target = document.getElementById('tab-' + id);
+  if (target) target.classList.add('active');
+  if (btn) btn.classList.add('active');
+  // 탭 전환 시 스크롤 맨 위로 리셋
+  window.scrollTo(0, 0);
+  document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
 }
 
 // 태그 선택 (single)
@@ -506,30 +511,34 @@ function initMulti(id) {
   });
 }
 
-initSingle('typeTags');
-document.querySelectorAll('.style-opts').forEach(g => {
-  g.querySelectorAll('.style-opt').forEach(t => {
-    t.addEventListener('click', () => {
-      g.querySelectorAll('.style-opt').forEach(x => x.classList.remove('on'));
-      t.classList.add('on');
+// DOM 초기화 (DOMContentLoaded 보장)
+document.addEventListener('DOMContentLoaded', function() {
+  initSingle('typeTags');
+  document.querySelectorAll('.style-opts').forEach(g => {
+    g.querySelectorAll('.style-opt').forEach(t => {
+      t.addEventListener('click', () => {
+        g.querySelectorAll('.style-opt').forEach(x => x.classList.remove('on'));
+        t.classList.add('on');
+      });
     });
   });
-});
-document.getElementById('bgOpts').querySelectorAll('.style-opt').forEach(t => {
-  t.addEventListener('click', () => {
-    document.getElementById('bgOpts').querySelectorAll('.style-opt').forEach(x => x.classList.remove('on'));
-    t.classList.add('on');
-    // 배경 창고 선택 초기화 (프리셋 선택 시 창고 선택 해제)
-    window._customBgUrl = null;
-    const toggleBtn = document.getElementById('bgStoreToggle');
-    if (toggleBtn && toggleBtn.textContent.includes('선택됨')) toggleBtn.textContent = '📦 배경 창고 열기';
-    document.querySelectorAll('#bgStoreGrid > div').forEach(cell => { cell.style.outline = ''; });
+  const bgOpts = document.getElementById('bgOpts');
+  if (bgOpts) bgOpts.querySelectorAll('.style-opt').forEach(t => {
+    t.addEventListener('click', () => {
+      bgOpts.querySelectorAll('.style-opt').forEach(x => x.classList.remove('on'));
+      t.classList.add('on');
+      window._customBgUrl = null;
+      const toggleBtn = document.getElementById('bgStoreToggle');
+      if (toggleBtn && toggleBtn.textContent.includes('선택됨')) toggleBtn.textContent = '📦 배경 창고 열기';
+      document.querySelectorAll('#bgStoreGrid > div').forEach(cell => { cell.style.outline = ''; });
+    });
   });
-});
-document.getElementById('editWmOpts').querySelectorAll('.style-opt').forEach(t => {
-  t.addEventListener('click', () => {
-    document.getElementById('editWmOpts').querySelectorAll('.style-opt').forEach(x => x.classList.remove('on'));
-    t.classList.add('on');
+  const editWmOpts = document.getElementById('editWmOpts');
+  if (editWmOpts) editWmOpts.querySelectorAll('.style-opt').forEach(t => {
+    t.addEventListener('click', () => {
+      editWmOpts.querySelectorAll('.style-opt').forEach(x => x.classList.remove('on'));
+      t.classList.add('on');
+    });
   });
 });
 
