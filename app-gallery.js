@@ -184,69 +184,33 @@ function _buildWorkshopHTML() {
       <div id="wsCompletionBadge" style="font-size:11px;font-weight:700;color:var(--accent2);"></div>
     </div>
   </div>
-  <div class="sec-sub" style="margin-bottom:16px;">오늘 시술 사진을 올리고, 손님별로 묶어보세요</div>
+  <div class="sec-sub" style="margin-bottom:16px;">사진 올리면 바로 손님별로 배정해요</div>
 
-  <!-- 1단계: 손님 수 선택 -->
-  <div id="slotCreateSection" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;">1</div>
-        <div style="font-size:12px;font-weight:800;color:var(--text);">오늘 몇 분 시술하셨어요?</div>
-      </div>
-      <button id="slotCreateCloseBtn" onclick="_hideSlotCreate()" style="display:none;background:transparent;border:none;font-size:18px;color:var(--text3);cursor:pointer;">×</button>
-    </div>
-    <div id="slotCreateBody">
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-        ${[1,2,3,4,5].map(n => `<button onclick="createSlots(${n})" style="width:48px;height:48px;border-radius:12px;border:1.5px solid rgba(241,128,145,0.3);background:transparent;font-size:15px;font-weight:800;color:var(--text);cursor:pointer;">${n}</button>`).join('')}
-        <button onclick="showCustomerInput()" style="padding:10px 14px;border-radius:12px;border:1.5px solid rgba(241,128,145,0.3);background:transparent;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;">5명 이상이에요</button>
-      </div>
-      <div id="customCountWrap" style="display:none;align-items:center;gap:8px;">
-        <input type="number" id="customCountInput" min="6" max="15" placeholder="6~15" style="width:80px;padding:8px 12px;border-radius:10px;border:1px solid var(--border);font-size:14px;text-align:center;">
-        <button onclick="createSlotsCustom()" style="padding:8px 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">생성</button>
-      </div>
-    </div>
-    <div id="slotCreatedMsg" style="display:none;font-size:11px;color:var(--text3);">
-      슬롯이 생성됐어요. <button onclick="_showSlotCreate()" style="background:transparent;border:none;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;padding:0;">+ 슬롯 더 추가</button>
-    </div>
-  </div>
-
-  <!-- 2단계: 사진 올리기 드롭존 -->
-  <div id="wsDropZone" style="display:none;background:var(--bg2);border:1.5px dashed rgba(241,128,145,0.4);border-radius:18px;padding:20px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color 0.2s,background 0.2s;"
+  <!-- 사진 올리기 (메인 CTA) -->
+  <div id="wsDropZone" style="background:var(--bg2);border:1.5px dashed rgba(241,128,145,0.4);border-radius:18px;padding:24px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color 0.2s,background 0.2s;"
     onclick="document.getElementById('galleryFileInput').click()"
     ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='rgba(241,128,145,0.06)';"
     ondragleave="this.style.borderColor='';this.style.background='';"
     ondrop="_handleDropZoneDrop(event)"
     oncontextmenu="return false">
     <input type="file" id="galleryFileInput" accept="image/*" multiple style="display:none;" onchange="handleGalleryUpload(this)">
-    <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:10px;">
-      <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;">2</div>
-      <div style="font-size:13px;font-weight:700;color:var(--text);">사진 올리기</div>
-    </div>
-    <div style="font-size:28px;margin-bottom:6px;">📷</div>
-    <div style="font-size:12px;color:var(--text2);">탭하거나 여기로 드래그하세요</div>
-    <div style="font-size:11px;color:var(--text3);margin-top:3px;">최대 20장</div>
+    <div style="font-size:36px;margin-bottom:8px;">📷</div>
+    <div style="font-size:14px;font-weight:700;color:var(--text);">오늘 시술 사진 올리기</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:4px;">탭해서 사진 선택 · 최대 20장</div>
   </div>
 
-  <!-- 3단계: 슬롯 카드 2열 그리드 + 사진 배정 -->
+  <!-- 슬롯 카드 (가로 스크롤) -->
   <div id="slotCardHeader" style="display:none;margin-bottom:12px;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;">3</div>
-      <div style="font-size:12px;font-weight:800;color:var(--text);">슬롯 카드에 사진 배정</div>
-    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:11px;color:var(--text3);">손님 슬롯 <span id="slotCount">0</span>개</div>
-      <button id="slotBatchDeleteBtn" onclick="_batchDeleteSlots()" style="display:none;padding:5px 12px;border-radius:8px;border:1px solid rgba(220,53,69,0.4);background:transparent;color:#dc3545;font-size:11px;font-weight:700;cursor:pointer;">선택 삭제</button>
+      <div style="font-size:13px;font-weight:800;color:var(--text);">👤 손님별 사진</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="wsCompletionCount" style="font-size:11px;color:var(--text3);"></span>
+        <button onclick="openAssignPopup()" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">+ 배정하기</button>
+      </div>
     </div>
   </div>
-  <div id="slotCardList" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;"></div>
+  <div id="slotCardList" style="display:flex;gap:12px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch;"></div>
   <div id="wsBanner" style="display:none;margin-bottom:8px;"></div>
-
-  <!-- 하단 고정: 미배정 사진 배정하기 버튼 -->
-  <div id="wsUnassignedBar" style="display:none;position:fixed;bottom:65px;left:0;right:0;z-index:200;padding:12px 16px;background:rgba(255,255,255,0.97);backdrop-filter:blur(8px);border-top:1px solid var(--border);box-shadow:0 -2px 16px rgba(0,0,0,0.1);">
-    <button onclick="openAssignBottomSheet()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
-      <span>📷</span> 미배정 사진 <span id="unassignedCount">0</span>장 배정하기
-    </button>
-  </div>
   `;
 }
 
@@ -285,12 +249,20 @@ async function handleGalleryUpload(input) {
   if (!Array.isArray(input)) input.value = '';
   const zone = document.getElementById('wsDropZone');
   if (zone) { zone.style.borderColor = ''; zone.style.background = ''; }
+
+  // 슬롯 없으면 자동 생성 (손님 1)
+  if (_slots.length === 0 && toAdd.length > 0) {
+    const slot = { id: _uid(), label: '손님 1', order: 0, photos: [], caption: '', hashtags: '', status: 'open', instagramPublished: false, deferredAt: null, createdAt: Date.now() };
+    _slots.push(slot);
+    try { await saveSlotToDB(slot); } catch(_e) {}
+  }
+
   _renderPhotoGrid();
-  if (_slots.length === 0) {
-    setTimeout(() => {
-      const el = document.getElementById('slotCreateSection');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 200);
+  _renderSlotCards();
+
+  // 사진 추가했으면 배정 팝업 바로 열기
+  if (toAdd.length > 0) {
+    setTimeout(() => openAssignPopup(), 100);
   }
 }
 
@@ -315,29 +287,18 @@ async function resetWorkshop() {
 }
 
 // ═══════════════════════════════════════════════════════
-// 미배정 사진 바 업데이트 (기존 그리드 대체)
+// UI 상태 업데이트
 // ═══════════════════════════════════════════════════════
 function _renderPhotoGrid() {
-  const unassigned = _photos.filter(p => !_isAssigned(p.id));
-  const unassignedBar = document.getElementById('wsUnassignedBar');
-  const unassignedCount = document.getElementById('unassignedCount');
-  const dropZone = document.getElementById('wsDropZone');
-
   // 재시작 버튼: 사진이나 슬롯이 있으면 표시
   const resetBtn = document.getElementById('wsResetBtn');
   if (resetBtn) resetBtn.style.display = (_photos.length > 0 || _slots.length > 0) ? 'block' : 'none';
 
-  // 2단계 드롭존: 슬롯이 있으면 표시
-  if (dropZone) dropZone.style.display = _slots.length > 0 ? 'block' : 'none';
-
-  // 하단 미배정 사진 바: 미배정 사진이 있고 슬롯이 있으면 표시
-  if (unassignedBar) {
-    unassignedBar.style.display = (unassigned.length > 0 && _slots.length > 0) ? 'block' : 'none';
+  // 배정 팝업이 열려있으면 갱신
+  const pop = document.getElementById('_assignPopup');
+  if (pop && pop.style.display === 'flex') {
+    _renderAssignPopup();
   }
-  if (unassignedCount) unassignedCount.textContent = unassigned.length;
-
-  // 바텀시트 팝업이 열려있으면 그것도 갱신
-  _updateAssignBottomSheet();
 }
 
 function _isAssigned(id) {
@@ -357,117 +318,167 @@ function togglePhotoSelect(id) {
 }
 
 // ═══════════════════════════════════════════════════════
-// 사진 배정 바텀시트 팝업
+// 통합 배정 팝업 (사진 + 슬롯 한 화면에서)
 // ═══════════════════════════════════════════════════════
-function openAssignBottomSheet() {
+function openAssignPopup() {
   _selectedIds.clear();
-  let pop = document.getElementById('_assignBottomSheet');
+  let pop = document.getElementById('_assignPopup');
   if (!pop) {
     pop = document.createElement('div');
-    pop.id = '_assignBottomSheet';
-    pop.style.cssText = 'position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;justify-content:center;';
-    pop.onclick = e => { if (e.target === pop) closeAssignBottomSheet(); };
+    pop.id = '_assignPopup';
+    pop.style.cssText = 'position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;';
+    pop.onclick = e => { if (e.target === pop) closeAssignPopup(); };
     document.body.appendChild(pop);
   }
-  pop.innerHTML = `
-    <div id="_assignSheetCard" style="width:100%;max-width:480px;background:#fff;border-radius:20px 20px 0 0;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;" oncontextmenu="return false">
-      <div style="display:flex;justify-content:center;padding:10px 0 6px;">
-        <div style="width:36px;height:4px;border-radius:2px;background:rgba(0,0,0,0.12);"></div>
-      </div>
-      <div style="padding:0 16px 12px;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="font-size:15px;font-weight:800;color:var(--text);">📷 미배정 사진 배정하기</div>
-          <button onclick="closeAssignBottomSheet()" style="background:transparent;border:none;font-size:22px;color:#aaa;cursor:pointer;">×</button>
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px;">← 옆으로 스와이프해서 사진을 골라보세요</div>
-      </div>
-      <div id="_assignPhotoStrip" style="padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;user-select:none;-webkit-user-select:none;"></div>
-      <div id="_assignSlotBar" style="display:none;padding:12px 16px;border-top:1px solid var(--border);background:#fafafa;"></div>
-    </div>
-  `;
+  _renderAssignPopup();
   pop.style.display = 'flex';
-  _updateAssignBottomSheet();
 }
 
-function closeAssignBottomSheet() {
-  const pop = document.getElementById('_assignBottomSheet');
+function closeAssignPopup() {
+  const pop = document.getElementById('_assignPopup');
   if (pop) pop.style.display = 'none';
   _selectedIds.clear();
+  _renderSlotCards();
+  _renderPhotoGrid();
 }
 
-function _updateAssignBottomSheet() {
-  const strip = document.getElementById('_assignPhotoStrip');
-  const slotBar = document.getElementById('_assignSlotBar');
-  if (!strip) return;
+function _renderAssignPopup() {
+  const pop = document.getElementById('_assignPopup');
+  if (!pop) return;
 
   const unassigned = _photos.filter(p => !_isAssigned(p.id));
 
-  // 전체 배정 완료 시 자동 닫힘
-  if (unassigned.length === 0) {
-    closeAssignBottomSheet();
-    _renderPhotoGrid();
-    _renderSlotCards();
+  // 미배정 사진 없으면 닫기
+  if (unassigned.length === 0 && _slots.every(s => s.photos.length > 0)) {
+    closeAssignPopup();
     showToast('모든 사진이 배정됐어요 ✨');
     return;
   }
 
-  // 선택 여부에 따라 touch-action 변경
-  const hasSelection = _selectedIds.size > 0;
-  strip.style.touchAction = hasSelection ? 'none' : 'pan-x';
+  pop.innerHTML = `
+    <div style="width:100%;max-width:480px;background:#fff;border-radius:24px 24px 0 0;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;" oncontextmenu="return false">
+      <!-- 헤더 -->
+      <div style="display:flex;justify-content:center;padding:10px 0 4px;">
+        <div style="width:40px;height:4px;border-radius:2px;background:rgba(0,0,0,0.12);"></div>
+      </div>
+      <div style="padding:8px 16px 16px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:16px;font-weight:800;color:var(--text);">📷 사진 배정</div>
+          <button onclick="closeAssignPopup()" style="background:transparent;border:none;font-size:24px;color:#aaa;cursor:pointer;padding:0 4px;">×</button>
+        </div>
+      </div>
 
-  // 가로 스크롤 사진 스트립
-  strip.innerHTML = `
-    <div style="display:flex;gap:10px;min-width:max-content;">
-      ${unassigned.map(photo => {
-        const sel = _selectedIds.has(photo.id);
-        return `
-          <div onclick="togglePhotoSelect('${photo.id}')" style="flex-shrink:0;width:80px;cursor:pointer;user-select:none;-webkit-user-select:none;" oncontextmenu="return false">
-            <div style="position:relative;width:80px;height:80px;border-radius:12px;overflow:hidden;border:3px solid ${sel ? 'var(--accent)' : 'transparent'};transition:border-color 0.15s;">
-              <img src="${photo.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;">
-              <div style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:${sel ? 'var(--accent)' : 'rgba(0,0,0,0.35)'};display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;transition:background 0.15s;">${sel ? '✓' : ''}</div>
-            </div>
+      <!-- 미배정 사진 영역 -->
+      <div style="padding:16px;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">미배정 사진 ${unassigned.length}장 <span style="font-weight:400;">← 스와이프</span></div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;">
+          <div style="display:flex;gap:10px;min-width:max-content;">
+            ${unassigned.length ? unassigned.map(photo => {
+              const sel = _selectedIds.has(photo.id);
+              return `<div onclick="togglePhotoSelect('${photo.id}');_renderAssignPopup();" style="flex-shrink:0;width:72px;cursor:pointer;">
+                <div style="position:relative;width:72px;height:72px;border-radius:12px;overflow:hidden;border:3px solid ${sel ? 'var(--accent)' : 'transparent'};">
+                  <img src="${photo.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;">
+                  <div style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;border:2px solid #fff;background:${sel ? 'var(--accent)' : 'rgba(0,0,0,0.35)'};display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;">${sel ? '✓' : ''}</div>
+                </div>
+              </div>`;
+            }).join('') : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;width:100%;">모든 사진이 배정됨 ✅</div>'}
           </div>
-        `;
-      }).join('')}
+        </div>
+      </div>
+
+      <!-- 슬롯 영역 -->
+      <div style="flex:1;overflow-y:auto;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text3);">손님 슬롯 ${_slots.length}개</div>
+          <button onclick="_addSlotInPopup()" style="padding:6px 12px;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;">+ 손님 추가</button>
+        </div>
+        <div style="display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">
+          ${_slots.map(slot => {
+            const photos = (slot.photos || []).filter(p => !p.hidden);
+            const thumb = photos[0];
+            return `<div style="flex-shrink:0;width:120px;background:var(--bg2);border:2px solid ${slot.status === 'done' ? 'rgba(76,175,80,0.5)' : 'var(--border)'};border-radius:14px;padding:10px;position:relative;">
+              <button onclick="_deleteSlotInPopup('${slot.id}')" style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.1);border:none;color:#666;font-size:10px;cursor:pointer;">✕</button>
+              ${thumb
+                ? `<div style="width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;margin-bottom:6px;"><img src="${thumb.editedDataUrl || thumb.dataUrl}" style="width:100%;height:100%;object-fit:cover;"></div>`
+                : `<div style="width:100%;aspect-ratio:1/1;border-radius:10px;border:2px dashed rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;margin-bottom:6px;background:rgba(241,128,145,0.03);font-size:20px;color:var(--text3);">+</div>`
+              }
+              <div style="text-align:center;font-size:11px;font-weight:700;color:var(--text);">${slot.label}</div>
+              <div style="text-align:center;font-size:10px;color:var(--text3);margin-top:2px;">${photos.length}장</div>
+              ${_selectedIds.size > 0 ? `<button onclick="_assignToSlotFromPopup('${slot.id}')" style="width:100%;margin-top:8px;padding:8px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:11px;font-weight:700;cursor:pointer;">여기에 넣기</button>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- 하단 액션 -->
+      ${_selectedIds.size > 0 ? `
+        <div style="padding:12px 16px;border-top:1px solid var(--border);background:#fafafa;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">${_selectedIds.size}장 선택됨</div>
+          <button onclick="_deleteSelectedInPopup()" style="padding:10px 16px;border-radius:10px;border:1.5px solid rgba(220,53,69,0.4);background:transparent;color:#dc3545;font-size:12px;font-weight:700;cursor:pointer;">선택 삭제</button>
+        </div>
+      ` : ''}
     </div>
   `;
-
-  // 하단 슬롯 선택 바
-  if (slotBar) {
-    if (_selectedIds.size === 0) {
-      slotBar.style.display = 'none';
-    } else {
-      slotBar.style.display = 'block';
-      const openSlots = _slots.filter(s => s.status !== 'done');
-      slotBar.innerHTML = `
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">${_selectedIds.size}장 선택됨 — 어느 손님에게 넣을까요?</div>
-        <div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;touch-action:pan-x;">
-          ${openSlots.map(s => `
-            <button onclick="assignSelectedFromSheet('${s.id}')" style="flex-shrink:0;padding:12px 18px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;user-select:none;-webkit-user-select:none;">${s.label}에 넣기</button>
-          `).join('')}
-          <button onclick="deleteSelectedFromSheet()" style="flex-shrink:0;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(220,53,69,0.4);background:transparent;color:#dc3545;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">삭제</button>
-        </div>
-      `;
-    }
-  }
 }
 
-function assignSelectedFromSheet(slotId) {
+async function _addSlotInPopup() {
+  const num = _slots.length + 1;
+  const slot = { id: _uid(), label: `손님 ${num}`, order: num - 1, photos: [], caption: '', hashtags: '', status: 'open', instagramPublished: false, deferredAt: null, createdAt: Date.now() };
+  _slots.push(slot);
+  try { await saveSlotToDB(slot); } catch(_e) {}
+  _renderAssignPopup();
+}
+
+async function _deleteSlotInPopup(slotId) {
+  const slot = _slots.find(s => s.id === slotId);
+  // 배정된 사진들을 미배정 풀로 복귀
+  if (slot) {
+    slot.photos.forEach(sp => {
+      if (!_photos.find(p => p.id === sp.id)) {
+        _photos.push({ id: sp.id, file: null, dataUrl: sp.dataUrl });
+      }
+    });
+  }
+  _slots = _slots.filter(s => s.id !== slotId);
+  try { await deleteSlotFromDB(slotId); } catch(_e) {}
+  // 슬롯 번호 재정렬
+  _renumberSlots();
+  _renderAssignPopup();
+}
+
+function _assignToSlotFromPopup(slotId) {
   if (!_selectedIds.size) return;
   [..._selectedIds].forEach(id => _assignToSlot(id, slotId));
   _selectedIds.clear();
   showToast('배정 완료 ✅');
-  _renderSlotCards();
-  _updateAssignBottomSheet(); // 팝업 유지, 갱신
+  _renderAssignPopup();
 }
 
-function deleteSelectedFromSheet() {
+function _deleteSelectedInPopup() {
   if (!_selectedIds.size) return;
   _photos = _photos.filter(p => !_selectedIds.has(p.id));
   _selectedIds.clear();
   showToast('삭제됨');
-  _updateAssignBottomSheet();
+  _renderAssignPopup();
 }
+
+// 슬롯 번호 재정렬 (삭제 후)
+async function _renumberSlots() {
+  _slots.forEach((slot, i) => {
+    slot.label = `손님 ${i + 1}`;
+    slot.order = i;
+  });
+  for (const slot of _slots) {
+    try { await saveSlotToDB(slot); } catch(_e) {}
+  }
+}
+
+// 기존 함수들 호환용
+function openAssignBottomSheet() { openAssignPopup(); }
+function closeAssignBottomSheet() { closeAssignPopup(); }
+function _updateAssignBottomSheet() { _renderAssignPopup(); }
+function assignSelectedFromSheet(slotId) { _assignToSlotFromPopup(slotId); }
+function deleteSelectedFromSheet() { _deleteSelectedInPopup(); }
 
 function deleteSelectedPhotos() {
   if (!_selectedIds.size) return;
@@ -479,40 +490,30 @@ function deleteSelectedPhotos() {
 }
 
 // ═══════════════════════════════════════════════════════
-// 슬롯 생성
+// 슬롯 생성 (호환용 - 이제 배정 팝업에서 직접 추가)
 // ═══════════════════════════════════════════════════════
-function showCustomerInput() {
-  const w = document.getElementById('customCountWrap');
-  if (w) w.style.display = 'flex';
-}
+function showCustomerInput() {}
 function createSlots(n) { _createSlots(n); }
-function createSlotsCustom() {
-  const n = parseInt(document.getElementById('customCountInput')?.value);
-  if (!n || n < 6 || n > 15) { showToast('6~15 사이로 입력해주세요'); return; }
-  _createSlots(n);
-}
+function createSlotsCustom() {}
 
 async function _createSlots(n) {
-  const base = _slots.length;
   for (let i = 0; i < n; i++) {
-    const slot = { id: _uid(), label: `손님 ${base + i + 1}`, order: base + i, photos: [], caption: '', hashtags: '', status: 'open', instagramPublished: false, deferredAt: null, createdAt: Date.now() };
+    const num = _slots.length + 1;
+    const slot = { id: _uid(), label: `손님 ${num}`, order: num - 1, photos: [], caption: '', hashtags: '', status: 'open', instagramPublished: false, deferredAt: null, createdAt: Date.now() };
     _slots.push(slot);
     try { await saveSlotToDB(slot); } catch(_e) {}
   }
-  _hideSlotCreate();
   _renderSlotCards();
-  _renderPhotoGrid(); // 2단계 드롭존 표시 및 하단 바 업데이트
-  _renderCompletionBanner();
-  showToast(`슬롯 ${n}개 생성됐어요 ✨`);
+  _renderPhotoGrid();
 }
 
 // ═══════════════════════════════════════════════════════
-// 슬롯 카드 (2열 그리드)
+// 슬롯 카드 (가로 스크롤)
 // ═══════════════════════════════════════════════════════
 function _renderSlotCards() {
   const list   = document.getElementById('slotCardList');
   const header = document.getElementById('slotCardHeader');
-  const countEl= document.getElementById('slotCount');
+  const completionEl = document.getElementById('wsCompletionCount');
   if (!list) return;
 
   if (!_slots.length) {
@@ -522,53 +523,42 @@ function _renderSlotCards() {
   }
 
   if (header) header.style.display = 'block';
-  if (countEl) countEl.textContent = _slots.length;
+  const doneCount = _slots.filter(s => s.status === 'done').length;
+  if (completionEl) completionEl.textContent = doneCount > 0 ? `${doneCount}/${_slots.length} 완료` : '';
 
   list.innerHTML = '';
   _slots.forEach(slot => {
-    const done    = slot.status === 'done';
-    const checked = _slotCheckIds.has(slot.id);
+    const done = slot.status === 'done';
     const visiblePhotos = (slot.photos || []).filter(p => !p.hidden);
-    const thumb   = visiblePhotos[0];
+    const thumb = visiblePhotos[0];
     const photoCount = visiblePhotos.length;
 
     const card = document.createElement('div');
-    card.style.cssText = `position:relative;background:#fff;border:2px solid ${done ? 'rgba(76,175,80,0.6)' : checked ? 'var(--accent)' : 'var(--border)'};border-radius:16px;padding:10px;user-select:none;-webkit-user-select:none;`;
+    card.style.cssText = `flex-shrink:0;width:140px;background:#fff;border:2px solid ${done ? 'rgba(76,175,80,0.5)' : 'var(--border)'};border-radius:14px;padding:10px;user-select:none;-webkit-user-select:none;position:relative;`;
     card.dataset.slotId = slot.id;
     card.setAttribute('oncontextmenu', 'return false');
 
-    // 썸네일 또는 빈 영역
     const thumbHtml = thumb
       ? `<div onclick="openSlotPopup('${slot.id}')" style="position:relative;width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;cursor:pointer;">
-          <img src="${thumb.editedDataUrl || thumb.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;">
-          ${photoCount > 1 ? `<div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.6);border-radius:8px;padding:3px 8px;font-size:10px;color:#fff;font-weight:700;">+${photoCount}</div>` : ''}
+          <img src="${thumb.editedDataUrl || thumb.dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;">
+          ${photoCount > 1 ? `<div style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.6);border-radius:6px;padding:2px 6px;font-size:9px;color:#fff;font-weight:700;">+${photoCount}</div>` : ''}
         </div>`
-      : `<div onclick="openSlotAddPhoto('${slot.id}')" style="width:100%;aspect-ratio:1/1;border-radius:10px;border:2px dashed rgba(241,128,145,0.35);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:rgba(241,128,145,0.03);">
-          <div style="font-size:24px;margin-bottom:4px;">+</div>
-          <div style="font-size:11px;color:var(--text3);font-weight:600;">사진 넣기</div>
-        </div>`;
+      : `<div onclick="openAssignPopup()" style="width:100%;aspect-ratio:1/1;border-radius:10px;border:2px dashed rgba(241,128,145,0.35);display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(241,128,145,0.03);font-size:20px;color:var(--text3);">+</div>`;
 
     card.innerHTML = `
-      <div style="position:absolute;top:6px;left:6px;z-index:2;">
-        <div onclick="toggleSlotCheck('${slot.id}',event)" style="width:18px;height:18px;border-radius:5px;border:2px solid ${checked?'var(--accent)':'rgba(0,0,0,0.2)'};background:${checked?'var(--accent)':'rgba(255,255,255,0.9)'};display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;cursor:pointer;">${checked?'✓':''}</div>
-      </div>
-      <button onclick="deleteSlot('${slot.id}',event)" style="position:absolute;top:6px;right:6px;z-index:2;background:rgba(255,255,255,0.85);border:none;font-size:14px;color:var(--text3);cursor:pointer;line-height:1;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+      <button onclick="deleteSlot('${slot.id}',event)" style="position:absolute;top:6px;right:6px;z-index:2;background:rgba(255,255,255,0.9);border:none;font-size:12px;color:var(--text3);cursor:pointer;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
       ${thumbHtml}
-      <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <div style="font-size:12px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${slot.label}${done ? ' ✅' : ''}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px;">${photoCount}장 · ${done ? '완료' : '대기'}</div>
-        </div>
-        <button onclick="openSlotPopup('${slot.id}');event.stopPropagation();" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;font-size:10px;color:var(--text2);cursor:pointer;font-weight:600;">편집</button>
+      <div style="margin-top:6px;text-align:center;">
+        <div style="font-size:11px;font-weight:800;color:var(--text);">${slot.label}${done ? ' ✅' : ''}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">${photoCount}장</div>
       </div>
     `;
-
     list.appendChild(card);
   });
 
-  // 체크박스 선택 시 일괄 삭제 버튼 표시
-  const batchBtn = document.getElementById('slotBatchDeleteBtn');
-  if (batchBtn) batchBtn.style.display = _slotCheckIds.size > 0 ? 'block' : 'none';
+  // 재시작 버튼
+  const resetBtn = document.getElementById('wsResetBtn');
+  if (resetBtn) resetBtn.style.display = _slots.length > 0 ? 'block' : 'none';
 }
 
 // 슬롯에 사진 추가 (빈 슬롯 클릭 시)
@@ -634,6 +624,8 @@ async function deleteSlot(slotId, e) {
   _slots = _slots.filter(s => s.id !== slotId);
   _slotCheckIds.delete(slotId);
   try { await deleteSlotFromDB(slotId); } catch(_e) {}
+  // 슬롯 번호 재정렬
+  await _renumberSlots();
   _renderSlotCards();
   _renderPhotoGrid();
   _renderCompletionBanner();
