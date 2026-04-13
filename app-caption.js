@@ -145,13 +145,13 @@ function showCaptionLoader() {
     _personaFinalWords[1] || SLOT_KEYWORDS[1][Math.floor(Math.random() * SLOT_KEYWORDS[1].length)],
     _personaFinalWords[2] || SLOT_KEYWORDS[2][Math.floor(Math.random() * SLOT_KEYWORDS[2].length)],
   ];
-  _slotTimers.push(setTimeout(() => { if (!_slotLocked[0]) _lockReel(0, _autoLockWords[0]); }, 2200));
-  _slotTimers.push(setTimeout(() => { if (!_slotLocked[1]) _lockReel(1, _autoLockWords[1]); }, 4400));
-  _slotTimers.push(setTimeout(() => { if (!_slotLocked[2]) _lockReel(2, _autoLockWords[2]); }, 6600));
+  _slotTimers.push(setTimeout(() => { if (!_slotLocked[0]) _lockReel(0, _autoLockWords[0]); }, 1800));
+  _slotTimers.push(setTimeout(() => { if (!_slotLocked[1]) _lockReel(1, _autoLockWords[1]); }, 3000));
+  _slotTimers.push(setTimeout(() => { if (!_slotLocked[2]) _lockReel(2, _autoLockWords[2]); }, 4200));
 }
 
 function hideCaptionLoader(success, onClose) {
-  // 아직 안 잠긴 릴만 순차 잠금 (250ms 간격) — 페르소나 기반 최종 키워드 사용
+  // 아직 안 잠긴 릴만 순차 잠금 (150ms 간격) — API 응답 완료 시점에 맞춰 빠르게 종료
   const finalWords = [
     _personaFinalWords[0] || SLOT_KEYWORDS[0][Math.floor(Math.random() * SLOT_KEYWORDS[0].length)],
     _personaFinalWords[1] || SLOT_KEYWORDS[1][Math.floor(Math.random() * SLOT_KEYWORDS[1].length)],
@@ -160,18 +160,18 @@ function hideCaptionLoader(success, onClose) {
   let lastLockDelay = 0;
   [0, 1, 2].forEach(i => {
     if (!_slotLocked[i]) {
-      setTimeout(() => _lockReel(i, finalWords[i]), i * 250);
-      lastLockDelay = i * 250;
+      setTimeout(() => _lockReel(i, finalWords[i]), i * 150);
+      lastLockDelay = i * 150;
     }
   });
-  // 마지막 릴 잠금 후 1초 뒤 바로 닫기
+  // 마지막 릴 잠금 후 350ms 뒤 닫기
   setTimeout(() => {
     _slotTimers.forEach(t => { clearInterval(t); clearTimeout(t); });
     _slotTimers = [];
     document.getElementById('captionLoadingPopup').style.display = 'none';
     _slotLocked = [false, false, false];
-    if (onClose) setTimeout(onClose, 200);
-  }, lastLockDelay + 1000);
+    if (onClose) setTimeout(onClose, 80);
+  }, lastLockDelay + 350);
 }
 
 // ===== 온보딩 캡션 테스트 팝업 =====
@@ -485,6 +485,27 @@ async function generateCaption() {
       if (actionBar) actionBar.style.display = 'flex';
       btn.innerHTML = '다시 만들기 ✨';
       btn.disabled = false;
+
+      // 인라인 미리보기: 선택된 슬롯 사진 + 생성된 캡션
+      const inlinePrev = document.getElementById('captionInlinePreview');
+      if (inlinePrev && typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined') {
+        const slot = _slots.find(s => s.id === _captionSlotId);
+        const photos = slot ? slot.photos.filter(p => !p.hidden) : [];
+        if (photos.length) {
+          const shopName = localStorage.getItem('shop_name') || '잇데이';
+          const previewId = 'inl_carousel';
+          inlinePrev.style.display = 'block';
+          inlinePrev.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #f0f0f0;">
+              <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800;">${shopName[0]}</div>
+              <div style="font-size:13px;font-weight:700;">${shopName}</div>
+            </div>
+            <div style="padding:10px 0 6px;">${typeof _buildPeekCarousel === 'function' ? _buildPeekCarousel(photos, previewId) : ''}</div>
+            <div style="padding:6px 12px 14px;font-size:12px;color:#333;line-height:1.6;max-height:80px;overflow:hidden;text-overflow:ellipsis;">${finalCaption.slice(0,120)}${finalCaption.length>120?'…':''}</div>
+          `;
+          if (typeof _initPeekCarousel === 'function') setTimeout(() => _initPeekCarousel(previewId, photos.length), 80);
+        }
+      }
     });
     return; // 아래 btn 복원은 onClose 콜백에서 처리
   } catch(e) {
