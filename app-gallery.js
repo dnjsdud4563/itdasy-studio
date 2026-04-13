@@ -184,7 +184,7 @@ function _buildWorkshopHTML() {
       <div id="wsCompletionBadge" style="font-size:11px;font-weight:700;color:var(--accent2);"></div>
     </div>
   </div>
-  <div class="sec-sub" style="margin-bottom:16px;">사진 올리면 바로 손님별로 배정해요</div>
+  <div class="sec-sub" style="margin-bottom:16px;">오늘 시술 결과를 인스타용으로 꾸며요</div>
 
   <!-- 사진 올리기 (메인 CTA) -->
   <div id="wsDropZone" style="background:var(--bg2);border:1.5px dashed rgba(241,128,145,0.4);border-radius:18px;padding:24px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color 0.2s,background 0.2s;"
@@ -195,7 +195,7 @@ function _buildWorkshopHTML() {
     oncontextmenu="return false">
     <input type="file" id="galleryFileInput" accept="image/*" multiple style="display:none;" onchange="handleGalleryUpload(this)">
     <div style="font-size:36px;margin-bottom:8px;">📷</div>
-    <div style="font-size:14px;font-weight:700;color:var(--text);">오늘 시술 사진 올리기</div>
+    <div style="font-size:14px;font-weight:700;color:var(--text);">시술 사진 올려서 작업 시작</div>
     <div style="font-size:12px;color:var(--text3);margin-top:4px;">탭해서 사진 선택 · 최대 20장</div>
   </div>
 
@@ -208,6 +208,7 @@ function _buildWorkshopHTML() {
         <button onclick="openAssignPopup()" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">+ 배정하기</button>
       </div>
     </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px;">💡 카드를 탭하면 배경/텍스트 편집할 수 있어요</div>
   </div>
   <div id="slotCardList" style="display:flex;gap:12px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch;"></div>
   <div id="wsBanner" style="display:none;margin-bottom:8px;"></div>
@@ -867,16 +868,18 @@ function _renderPopupBody(slot) {
     </div>
     <!-- 사진 그리드 -->
     <div id="popupPhotoGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;"></div>
-    <!-- 일괄 편집 액션 (선택 시 노출) -->
+    <!-- 선택 삭제 (선택 시 노출) -->
     <div id="popupBulkBar" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;"><span id="popupSelCount">0</span>장 선택됨 — 적용 방식 선택</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button onclick="_bulkApplyAiBg()" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:12px;font-weight:700;cursor:pointer;">AI 배경합성</button>
-        <button onclick="_bulkApplyBA()" style="flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#8fa4ff,#a3b4ff);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">비포/애프터</button>
-        <button onclick="_bulkApplyOriginal()" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:12px;font-weight:700;cursor:pointer;">원본</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:12px;font-weight:700;color:var(--text);"><span id="popupSelCount">0</span>장 선택됨</div>
+        <button onclick="_bulkDeletePopup()" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(220,53,69,0.4);background:transparent;color:#dc3545;font-size:11px;font-weight:700;cursor:pointer;">선택 삭제</button>
       </div>
     </div>
     <div id="popupProgress" style="display:none;text-align:center;padding:16px;font-size:13px;color:var(--text3);">처리 중... ⏳</div>
+    <!-- 안내 문구 -->
+    <div style="text-align:center;padding:8px;font-size:11px;color:var(--text3);background:rgba(241,128,145,0.06);border-radius:10px;">
+      💡 배경 편집은 하단 <b>배경</b> 탭에서 할 수 있어요
+    </div>
   `;
   _renderPopupPhotoGrid(slot);
 }
@@ -1085,6 +1088,18 @@ async function _bulkApplyOriginal() {
   try { await saveSlotToDB(slot); } catch(_e) {}
   _popupSelIds.clear();
   _renderPopupPhotoGrid(slot);
+}
+
+async function _bulkDeletePopup() {
+  const slot = _slots.find(s => s.id === _popupSlotId);
+  if (!slot || !_popupSelIds.size) return;
+  if (!confirm(`선택한 ${_popupSelIds.size}장을 삭제할까요?`)) return;
+  slot.photos = slot.photos.filter(p => !_popupSelIds.has(p.id));
+  try { await saveSlotToDB(slot); } catch(_e) {}
+  _popupSelIds.clear();
+  _renderPopupPhotoGrid(slot);
+  _renderSlotCards();
+  showToast('삭제됨');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1371,6 +1386,23 @@ async function _applyBgToPhoto(photo, bg, slot) {
 let _userElements = [];
 let _elementEditState = null; // { photoId, elementId, x, y, scale, opacity, imgData }
 
+// 기본 텍스트 요소 생성
+function _createDefaultTextElement(text, color = '#f18091') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 300; canvas.height = 100;
+  const ctx = canvas.getContext('2d');
+  ctx.font = 'bold 48px sans-serif';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 150, 50);
+  return canvas.toDataURL('image/png');
+}
+
+const DEFAULT_ELEMENTS = [
+  { id: '_default_itdasy', name: '잇데이', isDefault: true },
+];
+
 function _loadUserElements() {
   try { return JSON.parse(localStorage.getItem('itdasy_user_elements') || '[]'); } catch(_) { return []; }
 }
@@ -1395,7 +1427,23 @@ function _renderElementPanel() {
   const slot = _slots.find(s => s.id === _popupSlotId);
   const selectedPhotos = slot ? slot.photos.filter(p => _popupSelIds.has(p.id) && !p.hidden) : [];
 
+  // 기본 "잇데이" 텍스트 요소 이미지
+  const itdasyImg = _createDefaultTextElement('잇데이', '#f18091');
+
   body.innerHTML = `
+    <!-- 기본 텍스트 요소 -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">✨ 기본 텍스트</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+        <div style="cursor:pointer;" onclick="selectDefaultElement('itdasy')">
+          <div style="aspect-ratio:1/1;border-radius:12px;overflow:hidden;border:1.5px solid var(--accent);background:#fff5f7;display:flex;align-items:center;justify-content:center;">
+            <img src="${itdasyImg}" style="width:90%;height:auto;object-fit:contain;">
+          </div>
+          <div style="font-size:9px;color:var(--accent);text-align:center;margin-top:4px;font-weight:700;">잇데이</div>
+        </div>
+      </div>
+    </div>
+    <!-- 내 요소 -->
     <div style="margin-bottom:16px;">
       <div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:10px;">📦 내 요소 (로고, 브랜드 이미지)</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
@@ -1483,6 +1531,39 @@ function selectElement(elementId) {
     elementImg: element.imageData,
     x: 50, y: 50, // % 기준 중앙
     scale: 30, // % 기준
+    opacity: 100,
+  };
+
+  closeElementPanel();
+  _openElementEditor(photo);
+}
+
+function selectDefaultElement(type) {
+  const slot = _slots.find(s => s.id === _popupSlotId);
+  if (!slot) return;
+
+  const selectedPhotos = slot.photos.filter(p => _popupSelIds.has(p.id) && !p.hidden);
+  if (!selectedPhotos.length) {
+    showToast('먼저 사진을 선택해주세요');
+    return;
+  }
+
+  // 기본 텍스트 요소 생성
+  let elementImg;
+  if (type === 'itdasy') {
+    elementImg = _createDefaultTextElement('잇데이', '#f18091');
+  } else {
+    return;
+  }
+
+  const photo = selectedPhotos[0];
+  _elementEditState = {
+    photoId: photo.id,
+    allPhotoIds: selectedPhotos.map(p => p.id),
+    elementId: '_default_' + type,
+    elementImg,
+    x: 50, y: 85, // 하단 중앙
+    scale: 25,
     opacity: 100,
   };
 
