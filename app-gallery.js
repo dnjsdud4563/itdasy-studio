@@ -1369,16 +1369,21 @@ async function _applyBgToPhoto(photo, bg, slot) {
   if (photo.removedBgUrl) {
     personImg = await _loadImageSrc(photo.removedBgUrl);
   } else {
-    // 누끼 API 호출
-    const res = await fetch(API + '/image/remove-bg', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ image_data: photo.dataUrl }),
-    });
-    if (!res.ok) throw new Error('누끼 실패');
-    const data = await res.json();
-    photo.removedBgUrl = data.image_url;
-    personImg = await _loadImageSrc(data.image_url);
+    // 누끼 API 호출 (FormData 방식)
+    const blob = _dataUrlToBlob(photo.dataUrl);
+    const fd = new FormData();
+    fd.append('file', blob, 'photo.jpg');
+    const res = await fetch(API + '/image/remove-bg', { method: 'POST', headers: authHeader(), body: fd });
+    if (res.status === 429) throw new Error('한도 초과');
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || '누끼 실패');
+    const url = URL.createObjectURL(await res.blob());
+    personImg = await _loadImageSrc(url);
+    URL.revokeObjectURL(url);
+    // 캐싱용
+    const cacheCanvas = document.createElement('canvas');
+    cacheCanvas.width = personImg.width; cacheCanvas.height = personImg.height;
+    cacheCanvas.getContext('2d').drawImage(personImg, 0, 0);
+    photo.removedBgUrl = cacheCanvas.toDataURL('image/png');
   }
 
   // 배경 이미지 로드 또는 그라데이션 캔버스 생성
@@ -1388,7 +1393,7 @@ async function _applyBgToPhoto(photo, bg, slot) {
     bgCanvas = document.createElement('canvas');
     bgCanvas.width = 1080; bgCanvas.height = 1080;
     const ctx = bgCanvas.getContext('2d');
-    _drawCoverCtx(ctx, bgImg, 1080, 1080);
+    _drawCoverCtx(ctx, bgImg, 0, 0, 1080, 1080);
   } else {
     bgCanvas = document.createElement('canvas');
     bgCanvas.width = 1080; bgCanvas.height = 1080;
@@ -1764,7 +1769,7 @@ async function _applyElementToPhoto(photo, slot) {
 
   // 베이스 이미지
   const baseImg = await _loadImageSrc(photo.editedDataUrl || photo.dataUrl);
-  _drawCoverCtx(ctx, baseImg, 1080, 1080);
+  _drawCoverCtx(ctx, baseImg, 0, 0, 1080, 1080);
 
   // 요소 이미지
   const elemImg = await _loadImageSrc(state.elementImg);
@@ -1973,6 +1978,8 @@ function _openReviewEditor(photo) {
   const canvas = document.getElementById('reviewEditorCanvas');
   editor.style.display = 'block';
   canvas.innerHTML = `<div id="reviewEditWrap" style="position:relative;width:90%;max-width:400px;aspect-ratio:1/1;"><img src="${photo.editedDataUrl || photo.dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"><img id="reviewOverlay" src="${_reviewEditState.stickerImg}" style="position:absolute;left:${_reviewEditState.x}%;top:${_reviewEditState.y}%;transform:translate(-50%,-50%);width:${_reviewEditState.scale}%;opacity:${_reviewEditState.opacity/100};pointer-events:none;"></div>`;
+  document.getElementById('reviewScale').value = _reviewEditState.scale;
+  document.getElementById('reviewScaleVal').textContent = _reviewEditState.scale + '%';
   document.getElementById('reviewOpacity').value = _reviewEditState.opacity;
   document.getElementById('reviewOpacityVal').textContent = _reviewEditState.opacity + '%';
   _setupReviewDrag();
@@ -1999,6 +2006,13 @@ function updateReviewOpacity(val) {
   document.getElementById('reviewOpacityVal').textContent = val + '%';
   const o = document.getElementById('reviewOverlay');
   if (o) o.style.opacity = val / 100;
+}
+
+function updateReviewScale(val) {
+  _reviewEditState.scale = parseInt(val);
+  document.getElementById('reviewScaleVal').textContent = val + '%';
+  const o = document.getElementById('reviewOverlay');
+  if (o) o.style.width = val + '%';
 }
 
 function cancelReviewEdit() {
@@ -2032,7 +2046,7 @@ async function _applyReviewToPhoto(photo, slot) {
   canvas.width = 1080; canvas.height = 1080;
   const ctx = canvas.getContext('2d');
   const baseImg = await _loadImageSrc(photo.editedDataUrl || photo.dataUrl);
-  _drawCoverCtx(ctx, baseImg, 1080, 1080);
+  _drawCoverCtx(ctx, baseImg, 0, 0, 1080, 1080);
   const stickerImg = await _loadImageSrc(state.stickerImg);
   const stickerW = 1080 * (state.scale / 100);
   const stickerH = stickerW * (stickerImg.height / stickerImg.width);
