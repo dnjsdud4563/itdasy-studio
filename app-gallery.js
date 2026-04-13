@@ -729,10 +729,14 @@ function _dropToSlot(slotId) {
 // 드래그 (Touch + Mouse)
 // ═══════════════════════════════════════════════════════
 function _initDragEvents() {
-  document.addEventListener('touchmove',  _moveDragInd, { passive: true });
+  document.addEventListener('touchmove',  _moveDragInd, { passive: false });
   document.addEventListener('mousemove',  _moveDragIndMouse);
   document.addEventListener('touchend',   _onDragEnd, { passive: false });
   document.addEventListener('mouseup',    _onDragEnd);
+}
+
+function _preventDragSelect(e) {
+  if (_dragPhotoId) e.preventDefault();
 }
 
 function _startDrag(photoId, dataUrl, el) {
@@ -756,6 +760,7 @@ function _showDragIndicator(dataUrl) {
 
 function _moveDragInd(e) {
   if (!_dragPhotoId) return;
+  e.preventDefault(); // 드래그 중 텍스트 선택 방지
   const ind = document.getElementById('_gDragInd');
   if (!ind) return;
   const t = e.touches[0];
@@ -1543,6 +1548,7 @@ function _setupElementDrag() {
 
   // 터치
   wrap.addEventListener('touchstart', e => {
+    e.preventDefault(); // 텍스트 선택/컨텍스트 메뉴 방지
     if (e.touches.length === 2) {
       pinching = true;
       startDist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
@@ -1553,7 +1559,7 @@ function _setupElementDrag() {
       startX = pos.x; startY = pos.y;
       startElemX = _elementEditState.x; startElemY = _elementEditState.y;
     }
-  }, { passive: true });
+  }, { passive: false });
 
   wrap.addEventListener('touchmove', e => {
     if (pinching && e.touches.length === 2) {
@@ -2036,6 +2042,7 @@ function _setupReviewDrag() {
   };
 
   wrap.addEventListener('touchstart', e => {
+    e.preventDefault(); // 텍스트 선택/컨텍스트 메뉴 방지
     if (e.touches.length === 2) {
       pinching = true;
       startDist = Math.hypot(e.touches[1].clientX - e.touches[0].clientX, e.touches[1].clientY - e.touches[0].clientY);
@@ -2046,7 +2053,7 @@ function _setupReviewDrag() {
       startX = pos.x; startY = pos.y;
       startElemX = _reviewEditState.x; startElemY = _reviewEditState.y;
     }
-  }, { passive: true });
+  }, { passive: false });
 
   wrap.addEventListener('touchmove', e => {
     if (pinching && e.touches.length === 2) {
@@ -2206,6 +2213,7 @@ function _initPeekCarousel(id, total) {
   let sx = 0, st = 0, dragging = false, lastX = 0, velocity = 0, lastTime = 0;
 
   track.addEventListener('touchstart', e => {
+    e.preventDefault(); // 텍스트 선택 방지
     sx = e.touches[0].clientX;
     lastX = sx;
     st = Date.now();
@@ -2213,7 +2221,7 @@ function _initPeekCarousel(id, total) {
     velocity = 0;
     dragging = true;
     track.style.transition = 'none';
-  }, { passive: true });
+  }, { passive: false });
 
   track.addEventListener('touchmove', e => {
     if (!dragging) return;
@@ -2321,6 +2329,7 @@ function _initInstaCarousel(id, total) {
 
   let sx = 0, dragging = false, velocity = 0, lastX = 0, lastTime = 0, startOffset = 0;
   track.addEventListener('touchstart', e => {
+    e.preventDefault(); // 텍스트 선택 방지
     sx = e.touches[0].clientX;
     lastX = sx;
     lastTime = Date.now();
@@ -2328,7 +2337,7 @@ function _initInstaCarousel(id, total) {
     dragging = true;
     startOffset = -cur * slideW;
     track.style.transition = 'none';
-  }, { passive: true });
+  }, { passive: false });
 
   track.addEventListener('touchmove', e => {
     if (!dragging) return;
@@ -2569,7 +2578,7 @@ function _showCaptionPublishPreview(photos, caption) {
         }
       }
       let sx = 0, st = 0, dr = false;
-      track.addEventListener('touchstart', e => { sx = e.touches[0].clientX; st = Date.now(); dr = true; }, { passive: true });
+      track.addEventListener('touchstart', e => { e.preventDefault(); sx = e.touches[0].clientX; st = Date.now(); dr = true; }, { passive: false });
       track.addEventListener('touchend', e => {
         if (!dr) return; dr = false;
         const dx = e.changedTouches[0].clientX - sx;
