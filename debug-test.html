@@ -1,0 +1,35 @@
+<\!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+<style>body { padding: 20px; }</style>
+</head>
+<body>
+<h3>탭 CSS 테스트</h3>
+<div id="nav" style="display:flex; gap:10px; margin-bottom:20px;">
+  <button onclick="showTabTest('a')">탭 A</button>
+  <button onclick="showTabTest('b')">탭 B (비어보이면 스크롤 문제)</button>
+  <button onclick="showTabTest('c')">탭 C</button>
+</div>
+<div class="tab active" id="tab-a">
+  <div class="sec-title">탭 A - 제목 보임?</div>
+  <p>텍스트가 보이면 CSS 정상</p>
+</div>
+<div class="tab" id="tab-b">
+  <div class="sec-title">탭 B - 이 글자 보여요?</div>
+  <p>이 텍스트가 안 보이면 display:block 안 됨</p>
+</div>
+<div class="tab" id="tab-c">
+  <div class="sec-title">탭 C 내용</div>
+</div>
+<script src="app-core.js"></script>
+<script>
+function showTabTest(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  window.scrollTo(0,0);
+  alert('showTab 실행됨: tab-'+id+'\n현재 display: ' + getComputedStyle(document.getElementById('tab-'+id)).display);
+}
+</script>
+</body>
+</html>
