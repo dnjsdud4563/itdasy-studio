@@ -452,12 +452,11 @@ async function generateCaption() {
   const shopType = localStorage.getItem('shop_type') || '붙임머리';
   const cfg = SHOP_CONFIG[shopType] || SHOP_CONFIG['붙임머리'];
   const typeStr = types.length > 0 ? types.join(', ') : cfg.defaultTag;
-  // 첨부된 사진 태그 포함
-  const photoTags = [
-    _captionPhotos.before?.tags ? '(시술 전: ' + _captionPhotos.before.tags + ')' : '',
-    _captionPhotos.after?.tags ? '(시술 후: ' + _captionPhotos.after.tags + ')' : '',
-  ].filter(Boolean).join(' ');
-  const description = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 업종: ${shopType}. ${photoTags} ${memo || ''}`;
+  // 작업실 슬롯 연결 정보 포함
+  const slotNote = (typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined')
+    ? (() => { const s = _slots.find(sl => sl.id === _captionSlotId); return s ? `손님: ${s.label}. 사진 ${s.photos.filter(p=>!p.hidden).length}장. ` : ''; })()
+    : '';
+  const description = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 업종: ${shopType}. ${slotNote}${memo || ''}`;
 
   try {
     const res = await fetch(API + '/caption/generate', {
@@ -482,10 +481,10 @@ async function generateCaption() {
       document.getElementById('captionText').value = finalCaption;
       document.getElementById('captionHash').value = hashes;
       document.getElementById('captionResult').style.display = 'block';
+      const actionBar = document.getElementById('captionActionBar');
+      if (actionBar) actionBar.style.display = 'flex';
       btn.innerHTML = '다시 만들기 ✨';
       btn.disabled = false;
-      const stBtn = document.getElementById('scheduleToggleBtn');
-      if (stBtn) stBtn.style.display = 'block';
     });
     return; // 아래 btn 복원은 onClose 콜백에서 처리
   } catch(e) {
