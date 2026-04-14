@@ -175,7 +175,7 @@ async function _genSubmit() {
   if (memo) payload.memo = memo;
 
   try {
-    const res = await _personaFetch('POST', '/persona/generate/caption', payload);
+    const res = await _personaFetch('POST', '/persona/generate', payload);
 
     if (res.ok) {
       const data = await res.json();
