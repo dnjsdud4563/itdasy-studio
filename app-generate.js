@@ -172,7 +172,7 @@ async function _genSubmit() {
   const memo = document.getElementById('genMemo').value.trim();
 
   const payload = { category, photo_context };
-  if (memo) payload.memo = memo;
+  if (memo) payload.extra_notes = memo;
 
   try {
     const res = await _personaFetch('POST', '/persona/generate', payload);
