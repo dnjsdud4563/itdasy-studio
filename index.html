@@ -169,6 +169,7 @@
   <button class="nav-btn" onclick="showTab('ai-suggest',this); initAiRecommendTab()">AI추천</button>
   <button class="nav-btn" onclick="showTab('finish',this); initFinishTab()">마무리</button>
   <button class="nav-btn" onclick="showTab('persona',this); initPersonaTab()">페르소나</button>
+  <button class="nav-btn" onclick="showTab('generate',this); initGenerateTab()">캡션 생성</button>
 </div>
 
 <!-- 홈 탭 -->
@@ -841,6 +842,10 @@
   <div id="personaRoot"></div>
 </div>
 
+<div class="tab" id="tab-generate">
+  <div id="generateRoot"></div>
+</div>
+
 <!-- 갤러리 슬롯 팝업 -->
 <div id="slotPopup" style="display:none; position:fixed; inset:0; background:#fff; z-index:9000; flex-direction:column; user-select:none; -webkit-user-select:none;" oncontextmenu="return false">
   <div style="position:sticky; top:0; background:#fff; border-bottom:1px solid var(--border); padding:14px 16px; display:flex; align-items:center; gap:12px; z-index:1;">
@@ -953,6 +958,7 @@
 <script src="app-ai.js"></script>
 <script src="app-gallery.js"></script>
 <script src="app-persona.js"></script>
+<script src="app-generate.js"></script>
 
 </body>
 </html>
