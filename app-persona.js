@@ -7,6 +7,7 @@
 let _pPostCount = 0;
 let _detectCandidates = [];
 let _pIdentityLoaded = null;
+let _pNicknames = [];
 
 // ── 기본정보 상수
 const SUPPORTED_CATEGORIES = {"붙임머리":"extension","네일":"nail"};
@@ -47,6 +48,7 @@ async function initPersonaTab() {
   _renderShell();
   await Promise.all([
     _loadIdentity(),
+    _loadConsent(),
     _loadInstaStatus(),
     _loadSignatureList(),
   ]);
@@ -65,6 +67,8 @@ function _renderShell() {
   <div class="sec-sub">포스트를 수집하고 서명블록을 관리합니다</div>
 
   ${_renderIdentityBlock()}
+
+  ${_renderConsentBlock()}
 
   <!-- ── 블록 A: 포스트 수집 ──────────────────────── -->
   <div style="margin-bottom:16px; background:#fff; border-radius:16px; border:1px solid var(--border); padding:16px;">
@@ -465,12 +469,56 @@ function _renderIdentityBlock() {
     </div>
 
     <!-- Q8 location -->
-    <div style="margin-bottom:16px;">
+    <div style="margin-bottom:14px;">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q8. 위치 <span style="color:var(--accent);">*</span></div>
       <input id="pid-location" type="text" maxlength="100"
         placeholder="예: 서울 강남구 역삼동"
         oninput="_updateIdStatus();"
         style="width:100%;box-sizing:border-box;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
+    </div>
+
+    <!-- ── 선택 필드 구분선 ───────────── -->
+    <div style="border-top:1px dashed var(--border);margin:14px 0 14px;"></div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">선택 항목 (미입력 가능)</div>
+
+    <!-- Q5 nicknames -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q5. 닉네임 <span style="font-size:10px;font-weight:400;color:var(--text3);">최대 5개</span></div>
+      <div id="pid-nick-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;min-height:24px;"></div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="pid-nick-inp" type="text" placeholder="닉네임 입력 후 Enter"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();_addNicknameTag();}"
+          style="flex:1;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:7px 10px;">
+        <span id="pid-nick-hint" style="font-size:11px;color:var(--text3);white-space:nowrap;"></span>
+      </div>
+    </div>
+
+    <!-- Q6 signature_vocab -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q6. 자주 쓰는 표현 <span style="font-size:10px;font-weight:400;color:var(--text3);">쉼표 구분, 최대 20개</span></div>
+      <input id="pid-sig-vocab" type="text"
+        placeholder="예: 완성, 예쁘다, 추천"
+        style="width:100%;box-sizing:border-box;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
+    </div>
+
+    <!-- Q7 taboo_phrases -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q7. 금지 표현 <span style="font-size:10px;font-weight:400;color:var(--text3);">쉼표 구분, 최대 20개</span></div>
+      <input id="pid-taboo" type="text"
+        placeholder="예: 싸다, 할인, 저렴"
+        style="width:100%;box-sizing:border-box;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
+    </div>
+
+    <!-- Q9 personality_line -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q9. 브랜드 한 마디 <span style="font-size:10px;font-weight:400;color:var(--text3);">최대 200자</span></div>
+      <div style="position:relative;">
+        <textarea id="pid-personality" rows="3" maxlength="200"
+          placeholder="예: 손님 한 분 한 분의 개성을 살려드리는 샵입니다."
+          oninput="document.getElementById('pid-plc-count').textContent=this.value.length+'/200';"
+          style="width:100%;box-sizing:border-box;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:8px 10px 8px 10px;resize:vertical;"></textarea>
+        <span id="pid-plc-count" style="position:absolute;right:10px;bottom:8px;font-size:10px;color:var(--text3);">0/200</span>
+      </div>
     </div>
 
     <div style="display:flex;align-items:center;gap:10px;">
@@ -549,6 +597,31 @@ async function _loadIdentity() {
       // Q8 location
       const locEl = document.getElementById('pid-location');
       if (locEl && data.location) locEl.value = data.location;
+
+      // Q5 nicknames
+      if (Array.isArray(data.nicknames)) {
+        _pNicknames = data.nicknames.slice();
+        _renderNicknameTags();
+      }
+      // Q6 signature_vocab
+      if (Array.isArray(data.signature_vocab)) {
+        const svEl = document.getElementById('pid-sig-vocab');
+        if (svEl) svEl.value = data.signature_vocab.join(', ');
+      }
+      // Q7 taboo_phrases
+      if (Array.isArray(data.taboo_phrases)) {
+        const tpEl = document.getElementById('pid-taboo');
+        if (tpEl) tpEl.value = data.taboo_phrases.join(', ');
+      }
+      // Q9 personality_line
+      if (data.personality_line) {
+        const plEl = document.getElementById('pid-personality');
+        if (plEl) {
+          plEl.value = data.personality_line;
+          const cntEl = document.getElementById('pid-plc-count');
+          if (cntEl) cntEl.textContent = data.personality_line.length + '/200';
+        }
+      }
     }
 
     // 진행률: 서버 status 우선, 없으면 DOM 기반 계산
@@ -603,6 +676,24 @@ async function _saveIdentity() {
   if (tone && tone !== (loaded.tone_preference || ''))               body.tone_preference   = tone;
   if (loc  && loc  !== (loaded.location || ''))                      body.location          = loc;
 
+  // 선택 4필드 (빈 배열/빈문자열도 변경이면 포함)
+  const nicknames = _pNicknames.slice();
+  if (JSON.stringify(nicknames) !== JSON.stringify(loaded.nicknames || []))
+                                                                      body.nicknames         = nicknames;
+
+  const svRaw   = (document.getElementById('pid-sig-vocab')?.value || '').trim();
+  const sigVocab = svRaw ? svRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 20) : [];
+  if (JSON.stringify(sigVocab) !== JSON.stringify(loaded.signature_vocab || []))
+                                                                      body.signature_vocab   = sigVocab;
+
+  const tpRaw  = (document.getElementById('pid-taboo')?.value || '').trim();
+  const taboo  = tpRaw ? tpRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 20) : [];
+  if (JSON.stringify(taboo) !== JSON.stringify(loaded.taboo_phrases || []))
+                                                                      body.taboo_phrases     = taboo;
+
+  const pLine  = (document.getElementById('pid-personality')?.value || '').trim();
+  if (pLine !== (loaded.personality_line || ''))                      body.personality_line  = pLine;
+
   if (!Object.keys(body).length) {
     msgEl.textContent = '변경 사항 없음';
     btn.disabled = false; btn.textContent = '저장';
@@ -634,6 +725,136 @@ async function _saveIdentity() {
     msgEl.textContent = '오류: ' + e.message;
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '저장'; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Q5 닉네임 태그 입력
+// ─────────────────────────────────────────────────────────────────
+function _addNicknameTag() {
+  const inp = document.getElementById('pid-nick-inp');
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val || _pNicknames.length >= 5 || _pNicknames.includes(val)) { inp.value = ''; return; }
+  _pNicknames.push(val);
+  inp.value = '';
+  _renderNicknameTags();
+}
+
+function _removeNicknameTag(i) {
+  _pNicknames.splice(i, 1);
+  _renderNicknameTags();
+}
+
+function _renderNicknameTags() {
+  const el = document.getElementById('pid-nick-tags');
+  if (!el) return;
+  el.innerHTML = _pNicknames.map((t, i) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px 3px 12px;font-size:11px;color:var(--text2);">
+      ${_esc(t)}
+      <button onclick="_removeNicknameTag(${i})" style="background:none;border:none;cursor:pointer;padding:0;font-size:13px;color:var(--text3);line-height:1;margin-left:2px;">×</button>
+    </span>`
+  ).join('');
+  const hint = document.getElementById('pid-nick-hint');
+  if (hint) hint.textContent = _pNicknames.length >= 5 ? '최대 5개' : '';
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 동의 블록 (C4-UI-2)
+// ─────────────────────────────────────────────────────────────────
+function _renderConsentBlock() {
+  return `
+  <div id="pId-consent" style="margin-bottom:16px;background:#fff;border-radius:16px;border:1px solid var(--border);padding:16px;">
+    <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px;">서비스 동의</div>
+    <div id="pcon-body"><div style="font-size:12px;color:var(--text3);">불러오는 중…</div></div>
+  </div>`;
+}
+
+async function _loadConsent() {
+  const bodyEl = document.getElementById('pcon-body');
+  if (!bodyEl) return;
+  try {
+    const [resExist, resText] = await Promise.all([
+      _personaFetch('GET', '/persona/consent'),
+      _personaFetch('GET', '/persona/consent/text'),
+    ]);
+    const existing = resExist.ok ? await resExist.json() : null;
+
+    // 이미 동의 완료 → 접힌 상태
+    if (existing && existing.pipa_collect && existing.ai_processing) {
+      const date = (existing.agreed_at || '').slice(0, 10);
+      bodyEl.innerHTML = `<div style="font-size:12px;color:var(--text3);">✓ 동의 완료${date ? ' (' + date + ')' : ''}</div>`;
+      return;
+    }
+
+    const texts  = resText.ok ? await resText.json() : {};
+    // API 키 이름이 다를 수 있으므로 양쪽 시도
+    const pipaText = texts.pipa_collect_v1_0 || texts['pipa_collect_v1.0'] || texts.pipa_collect || '';
+    const aiText   = texts.ai_processing_v1_0 || texts['ai_processing_v1.0'] || texts.ai_processing || '';
+
+    bodyEl.innerHTML = `
+      <details style="margin-bottom:10px;">
+        <summary style="font-size:12px;cursor:pointer;color:var(--text2);font-weight:600;padding:2px 0;">개인정보 수집·이용 동의서 보기</summary>
+        <pre style="font-size:11px;color:var(--text3);white-space:pre-wrap;word-break:break-all;margin:8px 0 0;background:var(--bg3);padding:10px;border-radius:8px;font-family:inherit;max-height:180px;overflow-y:auto;">${_esc(pipaText)}</pre>
+      </details>
+      <details style="margin-bottom:14px;">
+        <summary style="font-size:12px;cursor:pointer;color:var(--text2);font-weight:600;padding:2px 0;">AI 처리 동의서 보기</summary>
+        <pre style="font-size:11px;color:var(--text3);white-space:pre-wrap;word-break:break-all;margin:8px 0 0;background:var(--bg3);padding:10px;border-radius:8px;font-family:inherit;max-height:180px;overflow-y:auto;">${_esc(aiText)}</pre>
+      </details>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;font-size:12px;">
+        <input type="checkbox" id="pcon-pipa" onchange="_syncConsentBtn();">
+        개인정보 수집·이용 동의 <span style="color:var(--accent);">(필수)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;font-size:12px;">
+        <input type="checkbox" id="pcon-ai" onchange="_syncConsentBtn();">
+        AI 처리 동의 <span style="color:var(--accent);">(필수)</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="pcon-btn" onclick="_saveConsent()" disabled
+          style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:not-allowed;opacity:0.4;">
+          동의 저장
+        </button>
+        <span id="pcon-msg" style="font-size:12px;color:var(--text3);"></span>
+      </div>`;
+  } catch (e) {
+    if (bodyEl) bodyEl.innerHTML = `<div style="font-size:12px;color:var(--text3);">불러오기 실패: ${_esc(e.message)}</div>`;
+  }
+}
+
+function _syncConsentBtn() {
+  const both = document.getElementById('pcon-pipa')?.checked && document.getElementById('pcon-ai')?.checked;
+  const btn  = document.getElementById('pcon-btn');
+  if (!btn) return;
+  btn.disabled     = !both;
+  btn.style.opacity = both ? '1' : '0.4';
+  btn.style.cursor  = both ? 'pointer' : 'not-allowed';
+}
+
+async function _saveConsent() {
+  const btn   = document.getElementById('pcon-btn');
+  const msgEl = document.getElementById('pcon-msg');
+  if (!btn || !msgEl) return;
+  btn.disabled = true; btn.textContent = '저장 중…';
+  msgEl.textContent = '';
+  try {
+    const res  = await _personaFetch('POST', '/persona/consent', {
+      pipa_collect: true, ai_processing: true,
+      versions: {pipa_collect: '1.0', ai_processing: '1.0'},
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      msgEl.textContent = '오류: ' + (data.detail || res.status);
+      btn.disabled = false; btn.textContent = '동의 저장';
+      return;
+    }
+    const bodyEl = document.getElementById('pcon-body');
+    if (bodyEl) {
+      const date = (data.agreed_at || new Date().toISOString()).slice(0, 10);
+      bodyEl.innerHTML = `<div style="font-size:12px;color:var(--text3);">✓ 동의 완료 (${date})</div>`;
+    }
+  } catch (e) {
+    if (msgEl) msgEl.textContent = '오류: ' + e.message;
+    if (btn) { btn.disabled = false; btn.textContent = '동의 저장'; }
   }
 }
 
