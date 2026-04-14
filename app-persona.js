@@ -6,6 +6,19 @@
 // 주의: count API 없음 → 탭 재진입해도 값 유지되나 새 페이지 로드 시 0으로 초기화
 let _pPostCount = 0;
 let _detectCandidates = [];
+let _pIdentityLoaded = null;
+
+// ── 기본정보 상수
+const SUPPORTED_CATEGORIES = {"붙임머리":"extension","네일":"nail"};
+const AGE_LABELS = {"10s":"10대","20s_early":"20대 초","20s_late":"20대 후","30s":"30대","40s_plus":"40대+"};
+const GENDER_LABELS = {"female":"여성","male":"남성","both":"전체"};
+const TONE_OPTIONS = [
+  {key:"casual_friendly", label:"친근반말",  example:"오늘도 예쁘게 해줬어요~"},
+  {key:"polite_formal",   label:"공손존댓",  example:"오늘도 예쁘게 해드렸습니다."},
+  {key:"lively_emoji",    label:"활기이모지", example:"완성 🤍✨ 너무 예뻐요!!"},
+  {key:"calm_premium",    label:"차분고급",  example:"차분한 무드로 마무리했습니다."},
+  {key:"mixed",           label:"혼합",      example:"상황별로 다르게"},
+];
 
 // ── 로컬 fetch 헬퍼 ──────────────────────────────────────────────
 async function _personaFetch(method, path, body) {
@@ -33,6 +46,7 @@ function _esc(str) {
 async function initPersonaTab() {
   _renderShell();
   await Promise.all([
+    _loadIdentity(),
     _loadInstaStatus(),
     _loadSignatureList(),
   ]);
@@ -49,6 +63,8 @@ function _renderShell() {
 <div style="padding:16px 16px 100px;">
   <div class="sec-title">페르소나 설정</div>
   <div class="sec-sub">포스트를 수집하고 서명블록을 관리합니다</div>
+
+  ${_renderIdentityBlock()}
 
   <!-- ── 블록 A: 포스트 수집 ──────────────────────── -->
   <div style="margin-bottom:16px; background:#fff; border-radius:16px; border:1px solid var(--border); padding:16px;">
@@ -368,6 +384,256 @@ async function _deleteSig(id) {
     }
   } catch (e) {
     if (itemEl) { itemEl.style.opacity = '1'; itemEl.style.outline = '1.5px solid var(--accent)'; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 기본정보 블록 (C4-UI: 필수 5개)
+// ─────────────────────────────────────────────────────────────────
+function _renderIdentityBlock() {
+  const ageKeys    = Object.keys(AGE_LABELS);
+  const genderKeys = Object.keys(GENDER_LABELS);
+
+  const audienceBoxes = ageKeys.map(age =>
+    genderKeys.map(gender =>
+      `<label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" id="pid-aud-${age}_${gender}" value="${age}_${gender}" onchange="_updateIdStatus();">
+        ${_esc(AGE_LABELS[age])}/${_esc(GENDER_LABELS[gender])}
+      </label>`
+    ).join('')
+  ).join('');
+
+  const svcBlocks = Object.entries(SUPPORTED_CATEGORIES).map(([label, key]) =>
+    `<div style="margin-bottom:8px;">
+      <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" id="pid-svc-${key}" value="${key}" onchange="_updateIdStatus();">
+        <span style="font-weight:600;">${_esc(label)}</span>
+      </label>
+      <div style="margin-top:5px;padding-left:20px;">
+        <input id="pid-sub-${key}" type="text"
+          placeholder="세부시술 (쉼표 구분, 최대 10개)"
+          style="width:100%;box-sizing:border-box;font-size:11px;border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text2);">
+      </div>
+    </div>`
+  ).join('');
+
+  const toneRadios = TONE_OPTIONS.map(t =>
+    `<label style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;cursor:pointer;">
+      <input type="radio" name="pid-tone" id="pid-tone-${t.key}" value="${t.key}" style="margin-top:2px;" onchange="_updateIdStatus();">
+      <span style="font-size:12px;">
+        <span style="font-weight:700;color:var(--text);">${_esc(t.label)}</span>
+        <span style="color:var(--text3);margin-left:6px;">${_esc(t.example)}</span>
+      </span>
+    </label>`
+  ).join('');
+
+  return `
+  <div style="margin-bottom:16px;background:#fff;border-radius:16px;border:1px solid var(--border);padding:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:800;color:var(--text);">기본정보</div>
+      <span id="_pIdStatus" style="font-size:11px;color:var(--text3);">필수 0/5 완료</span>
+    </div>
+
+    <!-- Q1 shop_name_intro -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q1. 샵 소개 한 줄 <span style="color:var(--accent);">*</span></div>
+      <div style="position:relative;">
+        <input id="pid-shop_name_intro" type="text" maxlength="50"
+          placeholder="예: 강남역 근처 붙임머리 전문 네일 샵"
+          oninput="document.getElementById('pid-sni-count').textContent=this.value.length+'/50';_updateIdStatus();"
+          style="width:100%;box-sizing:border-box;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:8px 48px 8px 10px;">
+        <span id="pid-sni-count" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--text3);">0/50</span>
+      </div>
+    </div>
+
+    <!-- Q2 services -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q2. 제공 시술 <span style="color:var(--accent);">*</span></div>
+      ${svcBlocks}
+    </div>
+
+    <!-- Q3 target_audience -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q3. 주요 고객층 <span style="color:var(--accent);">*</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 12px;">${audienceBoxes}</div>
+    </div>
+
+    <!-- Q4 tone_preference -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q4. 톤 선호도 <span style="color:var(--accent);">*</span></div>
+      ${toneRadios}
+    </div>
+
+    <!-- Q8 location -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q8. 위치 <span style="color:var(--accent);">*</span></div>
+      <input id="pid-location" type="text" maxlength="100"
+        placeholder="예: 서울 강남구 역삼동"
+        oninput="_updateIdStatus();"
+        style="width:100%;box-sizing:border-box;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="pid-saveBtn" onclick="_saveIdentity()"
+        style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
+        저장
+      </button>
+      <span id="pid-saveMsg" style="font-size:12px;color:var(--text3);"></span>
+    </div>
+  </div>`;
+}
+
+function _updateIdStatus() {
+  let done = 0;
+  if ((document.getElementById('pid-shop_name_intro')?.value || '').trim()) done++;
+  if (Object.values(SUPPORTED_CATEGORIES).some(k => document.getElementById('pid-svc-' + k)?.checked)) done++;
+  if (Object.keys(AGE_LABELS).some(a => Object.keys(GENDER_LABELS).some(g => document.getElementById(`pid-aud-${a}_${g}`)?.checked))) done++;
+  if (document.querySelector('input[name="pid-tone"]:checked')) done++;
+  if ((document.getElementById('pid-location')?.value || '').trim()) done++;
+  const el = document.getElementById('_pIdStatus');
+  if (el) el.textContent = `필수 ${done}/5 완료`;
+}
+
+async function _loadIdentity() {
+  try {
+    const [resData, resSt] = await Promise.all([
+      _personaFetch('GET', '/persona/identity'),
+      _personaFetch('GET', '/persona/identity/status'),
+    ]);
+    const data = resData.ok ? await resData.json() : null;
+    const st   = resSt.ok  ? await resSt.json()   : null;
+
+    if (data) {
+      _pIdentityLoaded = data;
+
+      // Q1
+      const sniEl = document.getElementById('pid-shop_name_intro');
+      if (sniEl && data.shop_name_intro) {
+        sniEl.value = data.shop_name_intro;
+        const cntEl = document.getElementById('pid-sni-count');
+        if (cntEl) cntEl.textContent = data.shop_name_intro.length + '/50';
+      }
+
+      // Q2 services: [{category, sub_services:[]}] or {extension:[...], nail:[...]}
+      if (data.services) {
+        const svcMap = {};
+        if (Array.isArray(data.services)) {
+          data.services.forEach(s => { svcMap[s.category] = s.sub_services || []; });
+        } else {
+          Object.assign(svcMap, data.services);
+        }
+        Object.values(SUPPORTED_CATEGORIES).forEach(key => {
+          if (svcMap[key] !== undefined) {
+            const cb = document.getElementById('pid-svc-' + key);
+            if (cb) cb.checked = true;
+            const subEl = document.getElementById('pid-sub-' + key);
+            if (subEl && Array.isArray(svcMap[key])) subEl.value = svcMap[key].join(', ');
+          }
+        });
+      }
+
+      // Q3 target_audience: ["10s_female", ...]
+      if (Array.isArray(data.target_audience)) {
+        data.target_audience.forEach(v => {
+          const cb = document.getElementById('pid-aud-' + v);
+          if (cb) cb.checked = true;
+        });
+      }
+
+      // Q4 tone_preference
+      if (data.tone_preference) {
+        const r = document.getElementById('pid-tone-' + data.tone_preference);
+        if (r) r.checked = true;
+      }
+
+      // Q8 location
+      const locEl = document.getElementById('pid-location');
+      if (locEl && data.location) locEl.value = data.location;
+    }
+
+    // 진행률: 서버 status 우선, 없으면 DOM 기반 계산
+    if (st && typeof st.required_completed === 'number' && typeof st.required_total === 'number') {
+      const el = document.getElementById('_pIdStatus');
+      if (el) el.textContent = `필수 ${st.required_completed}/${st.required_total} 완료`;
+    } else {
+      _updateIdStatus();
+    }
+  } catch (e) {
+    _updateIdStatus();
+  }
+}
+
+async function _saveIdentity() {
+  const btn   = document.getElementById('pid-saveBtn');
+  const msgEl = document.getElementById('pid-saveMsg');
+  if (!btn || !msgEl) return;
+  btn.disabled = true; btn.textContent = '저장 중…';
+  msgEl.textContent = '';
+
+  // 현재 폼 수집
+  const shop = (document.getElementById('pid-shop_name_intro')?.value || '').trim();
+  const services = [];
+  Object.values(SUPPORTED_CATEGORIES).forEach(key => {
+    const cb = document.getElementById('pid-svc-' + key);
+    if (cb?.checked) {
+      const raw = (document.getElementById('pid-sub-' + key)?.value || '').trim();
+      const sub = raw ? raw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 10) : [];
+      services.push({category: key, sub_services: sub});
+    }
+  });
+  const audience = [];
+  Object.keys(AGE_LABELS).forEach(a => {
+    Object.keys(GENDER_LABELS).forEach(g => {
+      if (document.getElementById(`pid-aud-${a}_${g}`)?.checked) audience.push(`${a}_${g}`);
+    });
+  });
+  const toneEl = document.querySelector('input[name="pid-tone"]:checked');
+  const tone   = toneEl?.value || '';
+  const loc    = (document.getElementById('pid-location')?.value || '').trim();
+
+  // diff: 변경됐거나 처음 채운 필드만 body에 포함, 빈 값 제외
+  const loaded = _pIdentityLoaded || {};
+  const body   = {};
+
+  if (shop && shop !== (loaded.shop_name_intro || ''))               body.shop_name_intro   = shop;
+  if (services.length && JSON.stringify(services) !== JSON.stringify(loaded.services || []))
+                                                                      body.services          = services;
+  if (audience.length && JSON.stringify(audience.sort()) !== JSON.stringify((loaded.target_audience || []).slice().sort()))
+                                                                      body.target_audience   = audience;
+  if (tone && tone !== (loaded.tone_preference || ''))               body.tone_preference   = tone;
+  if (loc  && loc  !== (loaded.location || ''))                      body.location          = loc;
+
+  if (!Object.keys(body).length) {
+    msgEl.textContent = '변경 사항 없음';
+    btn.disabled = false; btn.textContent = '저장';
+    return;
+  }
+
+  try {
+    const res  = await _personaFetch('PUT', '/persona/identity', body);
+    const data = await res.json();
+    if (!res.ok) { msgEl.textContent = '오류: ' + (data.detail || res.status); return; }
+
+    // 저장 성공 → 로컬 캐시 갱신
+    _pIdentityLoaded = Object.assign({}, loaded, body);
+    msgEl.textContent = '저장됨 ✓';
+    setTimeout(() => { const m = document.getElementById('pid-saveMsg'); if (m) m.textContent = ''; }, 2500);
+
+    // status 재조회
+    const resSt = await _personaFetch('GET', '/persona/identity/status');
+    if (resSt.ok) {
+      const st = await resSt.json();
+      if (typeof st.required_completed === 'number') {
+        const el = document.getElementById('_pIdStatus');
+        if (el) el.textContent = `필수 ${st.required_completed}/${st.required_total} 완료`;
+      }
+    } else {
+      _updateIdStatus();
+    }
+  } catch (e) {
+    msgEl.textContent = '오류: ' + e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '저장'; }
   }
 }
 
