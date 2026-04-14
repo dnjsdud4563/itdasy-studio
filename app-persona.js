@@ -162,7 +162,7 @@ async function _ingestInstagram() {
     const res  = await _personaFetch('POST', '/persona/posts/ingest/instagram');
     const data = await res.json();
     if (!res.ok) { msgEl.textContent = '오류: ' + (data.detail || res.status); return; }
-    msgEl.textContent = `추가 ${data.inserted}건 · 중복 ${data.skipped}건 · 누적 ${data.total_after}건`;
+    msgEl.textContent = `추가 ${data.inserted}건 · 중복 ${data.skipped_duplicates}건 · 빈값 ${data.skipped_empty}건 · 누적 ${data.total_after}건`;
     _pPostCount = data.total_after;
     _syncDetectBtn();
   } catch (e) {
@@ -196,7 +196,7 @@ async function _ingestManual() {
     const res  = await _personaFetch('POST', '/persona/posts/ingest/manual', { posts });
     const data = await res.json();
     if (!res.ok) { msgEl.textContent = '오류: ' + (data.detail || res.status); return; }
-    msgEl.textContent = `추가 ${data.inserted}건 · 중복 ${data.skipped}건 · 누적 ${data.total_after}건`;
+    msgEl.textContent = `추가 ${data.inserted}건 · 중복 ${data.skipped_duplicates}건 · 빈값 ${data.skipped_empty}건 · 누적 ${data.total_after}건`;
     textEl.value = '';
     _pPostCount = data.total_after;
     _syncDetectBtn();
