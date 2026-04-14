@@ -129,7 +129,6 @@ function _dataUrlToBlob(dataUrl) {
 let _photos         = [];        // [{ id, file, dataUrl }] — 미배정 사진 풀
 let _slots          = [];        // IndexedDB에서 로드
 let _selectedIds    = new Set(); // 그리드 탭-체크 선택 (사진 배정용)
-let _slotCheckIds   = new Set(); // 슬롯 카드 체크박스 선택 (일괄 삭제용)
 let _popupSelIds    = new Set(); // 팝업 내 사진 선택 (일괄 편집용)
 let _wsInited       = false;
 let _dragPhotoId    = null;
@@ -215,28 +214,6 @@ function _buildWorkshopHTML() {
   <div id="wsBanner" style="display:none;margin-bottom:8px;"></div>
   `;
 }
-
-// ═══════════════════════════════════════════════════════
-// 손님 수 선택 섹션 토글
-// ═══════════════════════════════════════════════════════
-function _hideSlotCreate() {
-  const body = document.getElementById('slotCreateBody');
-  const msg  = document.getElementById('slotCreatedMsg');
-  const closeBtn = document.getElementById('slotCreateCloseBtn');
-  if (body) body.style.display = 'none';
-  if (msg)  msg.style.display  = 'block';
-  if (closeBtn) closeBtn.style.display = 'none';
-}
-
-function _showSlotCreate() {
-  const body = document.getElementById('slotCreateBody');
-  const msg  = document.getElementById('slotCreatedMsg');
-  const closeBtn = document.getElementById('slotCreateCloseBtn');
-  if (body) body.style.display = 'block';
-  if (msg)  msg.style.display  = 'none';
-  if (closeBtn) closeBtn.style.display = 'block';
-}
-
 // ═══════════════════════════════════════════════════════
 // 사진 업로드
 // ═══════════════════════════════════════════════════════
@@ -281,7 +258,7 @@ async function resetWorkshop() {
     try { await deleteSlotFromDB(slot.id); } catch(_e) {}
   }
   _photos = []; _slots = [];
-  _selectedIds.clear(); _slotCheckIds.clear(); _popupSelIds.clear();
+  _selectedIds.clear(); _popupSelIds.clear();
   _wsInited = false;
   const root = document.getElementById('workshopRoot');
   if (root) { root.innerHTML = _buildWorkshopHTML(); _initDragEvents(); }
@@ -490,22 +467,6 @@ function _updateAssignBottomSheet() { _renderAssignPopup(); }
 function assignSelectedFromSheet(slotId) { _assignToSlotFromPopup(slotId); }
 function deleteSelectedFromSheet() { _deleteSelectedInPopup(); }
 
-function deleteSelectedPhotos() {
-  if (!_selectedIds.size) return;
-  _photos = _photos.filter(p => !_selectedIds.has(p.id));
-  _selectedIds.clear();
-  _renderPhotoGrid();
-  _renderSlotCards();
-  showToast('선택한 사진 삭제됨');
-}
-
-// ═══════════════════════════════════════════════════════
-// 슬롯 생성 (호환용 - 이제 배정 팝업에서 직접 추가)
-// ═══════════════════════════════════════════════════════
-function showCustomerInput() {}
-function createSlots(n) { _createSlots(n); }
-function createSlotsCustom() {}
-
 async function _createSlots(n) {
   await _renumberSlots(); // 먼저 기존 슬롯 번호 정렬
   for (let i = 0; i < n; i++) {
@@ -572,55 +533,6 @@ function _renderSlotCards() {
   if (resetBtn) resetBtn.style.display = _slots.length > 0 ? 'block' : 'none';
 }
 
-// 슬롯에 사진 추가 (빈 슬롯 클릭 시)
-function openSlotAddPhoto(slotId) {
-  const unassigned = _photos.filter(p => !_isAssigned(p.id));
-  if (unassigned.length === 0) {
-    // 미배정 사진 없으면 직접 업로드
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.multiple = true;
-    input.onchange = async () => {
-      const slot = _slots.find(s => s.id === slotId);
-      if (!slot) return;
-      for (const file of Array.from(input.files)) {
-        const dataUrl = await _fileToDataUrl(file);
-        const id = _uid();
-        slot.photos.push({ id, dataUrl, mode: 'original', editedDataUrl: null });
-        _photos.push({ id, file, dataUrl });
-      }
-      try { await saveSlotToDB(slot); } catch(_e) {}
-      _renderSlotCards();
-      _renderPhotoGrid();
-      showToast('사진 추가됨 ✅');
-    };
-    input.click();
-  } else {
-    // 미배정 사진 있으면 바텀시트 열기
-    openAssignBottomSheet();
-  }
-}
-
-function toggleSlotCheck(slotId, e) {
-  e?.stopPropagation();
-  _slotCheckIds.has(slotId) ? _slotCheckIds.delete(slotId) : _slotCheckIds.add(slotId);
-  _renderSlotCards();
-}
-
-async function _batchDeleteSlots() {
-  if (!_slotCheckIds.size) return;
-  if (!confirm(`선택한 슬롯 ${_slotCheckIds.size}개를 삭제할까요?`)) return;
-  for (const id of _slotCheckIds) {
-    _slots = _slots.filter(s => s.id !== id);
-    try { await deleteSlotFromDB(id); } catch(_e) {}
-  }
-  _slotCheckIds.clear();
-  _renderSlotCards();
-  _renderPhotoGrid();
-  _renderCompletionBanner();
-}
-
 async function deleteSlot(slotId, e) {
   e?.stopPropagation();
   const slot = _slots.find(s => s.id === slotId);
@@ -633,7 +545,6 @@ async function deleteSlot(slotId, e) {
     });
   }
   _slots = _slots.filter(s => s.id !== slotId);
-  _slotCheckIds.delete(slotId);
   try { await deleteSlotFromDB(slotId); } catch(_e) {}
   // 슬롯 번호 재정렬
   await _renumberSlots();
@@ -1003,29 +914,6 @@ async function addPhotosToPopup(input) {
   _renderPopupPhotoGrid(slot);
 }
 
-// ═══════════════════════════════════════════════════════
-// 일괄 편집 (선택된 사진들에 모드 적용)
-// ═══════════════════════════════════════════════════════
-async function _bulkApplyAiBg() {
-  if (!_popupSelIds.size) { showToast('사진을 먼저 선택해주세요'); return; }
-  if (!confirm(`선택한 ${_popupSelIds.size}장에 AI 배경합성을 적용할까요?\n서버 비용이 발생해요.`)) return;
-  if (_popupUsage && (_popupUsage.used + _popupSelIds.size) > _popupUsage.limit) {
-    showToast(`남은 횟수(${_popupUsage.limit - _popupUsage.used}회)가 부족해요`);
-    return;
-  }
-  const slot = _slots.find(s => s.id === _popupSlotId);
-  if (!slot) return;
-  const progress = document.getElementById('popupProgress');
-  if (progress) progress.style.display = 'block';
-  for (const id of _popupSelIds) {
-    const photo = slot.photos.find(p => p.id === id);
-    if (photo) await _applyAiBg(photo, slot);
-  }
-  if (progress) progress.style.display = 'none';
-  _popupSelIds.clear();
-  _renderPopupPhotoGrid(slot);
-}
-
 // 비포/애프터 모드 토글
 function toggleBAMode() {
   _baMode = !_baMode;
@@ -1126,18 +1014,6 @@ function showPhotoInstaPreview(dataUrl) {
   pop.style.display = 'flex';
 }
 
-async function _bulkApplyOriginal() {
-  const slot = _slots.find(s => s.id === _popupSlotId);
-  if (!slot) return;
-  for (const id of _popupSelIds) {
-    const photo = slot.photos.find(p => p.id === id);
-    if (photo) { photo.mode = 'original'; photo.editedDataUrl = null; }
-  }
-  try { await saveSlotToDB(slot); } catch(_e) {}
-  _popupSelIds.clear();
-  _renderPopupPhotoGrid(slot);
-}
-
 async function _bulkDeletePopup() {
   const slot = _slots.find(s => s.id === _popupSlotId);
   if (!slot || !_popupSelIds.size) return;
@@ -1151,28 +1027,8 @@ async function _bulkDeletePopup() {
 }
 
 // ═══════════════════════════════════════════════════════
-// AI 배경합성 / BA 합성 (app-portfolio.js 공유 유틸 사용)
+// 비포/애프터 합성 (app-portfolio.js 공유 유틸 사용)
 // ═══════════════════════════════════════════════════════
-async function _applyAiBg(photo, slot) {
-  try {
-    const blob = _dataUrlToBlob(photo.dataUrl);
-    const fd   = new FormData();
-    fd.append('file', blob, 'photo.jpg');
-    const res  = await fetch(API + '/image/remove-bg', { method: 'POST', headers: authHeader(), body: fd });
-    if (res.status === 429) { showToast((await res.json().catch(() => ({}))).detail || '한도 초과'); return; }
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'API 오류');
-    const url       = URL.createObjectURL(await res.blob());
-    const personImg = await _loadImageSrc(url);
-    URL.revokeObjectURL(url);
-    const canvas = document.createElement('canvas');
-    await compositePersonOnCanvas(canvas, personImg, 1080, 1350, 'cloud_bw', null);
-    photo.editedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
-    photo.mode = 'ai_bg';
-    if (_popupUsage) _popupUsage.used++;
-    await saveSlotToDB(slot);
-  } catch(e) { showToast('오류: ' + e.message); }
-}
-
 async function _applyBABetween(before, after, slot) {
   try {
     const beforeImg = await _loadImageSrc(before.editedDataUrl || before.dataUrl);
@@ -1451,10 +1307,6 @@ function _createDefaultTextElement(text, color = '#f18091') {
   ctx.fillText(text, 150, 50);
   return canvas.toDataURL('image/png');
 }
-
-const DEFAULT_ELEMENTS = [
-  { id: '_default_itdasy', name: '잇데이', isDefault: true },
-];
 
 function _loadUserElements() {
   try { return JSON.parse(localStorage.getItem('itdasy_user_elements') || '[]'); } catch(_) { return []; }
@@ -1940,25 +1792,6 @@ async function handleReviewUpload(input) {
     showToast('스크린샷이 추가됐어요! 아래에서 선택해 사진에 붙이세요 ✨');
   } catch(e) { resultDiv.innerHTML = `<div style="color:#dc3545;">업로드 실패: ${e.message}</div>`; }
   input.value = '';
-}
-
-async function _createReviewSticker(data) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 400; canvas.height = 200;
-  const ctx = canvas.getContext('2d');
-  const grad = ctx.createLinearGradient(0, 0, 400, 200);
-  grad.addColorStop(0, '#fff5f7'); grad.addColorStop(1, '#ffe4ec');
-  ctx.fillStyle = grad;
-  ctx.beginPath(); ctx.roundRect(0, 0, 400, 200, 16); ctx.fill();
-  ctx.strokeStyle = 'rgba(241,128,145,0.3)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.roundRect(0, 0, 400, 200, 16); ctx.stroke();
-  ctx.font = '24px sans-serif'; ctx.fillText('⭐'.repeat(data.rating || 5), 20, 40);
-  ctx.font = '600 16px sans-serif'; ctx.fillStyle = '#333';
-  const text = `"${(data.text || '').slice(0, 60)}"`;
-  ctx.fillText(text, 20, 80);
-  ctx.font = '500 12px sans-serif'; ctx.fillStyle = '#f18091';
-  ctx.fillText(data.platform || '고객리뷰', 20, 180);
-  return canvas.toDataURL('image/png');
 }
 
 function selectReviewSticker(idx) {
