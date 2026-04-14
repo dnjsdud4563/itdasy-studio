@@ -44,11 +44,11 @@ function _genBuildUI() {
       <div style="font-size:12px; font-weight:700; color:var(--text2); margin-bottom:8px;">카테고리 <span style="color:var(--accent);">*</span></div>
       <div style="display:flex; gap:10px;">
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px; font-weight:600; color:var(--text);">
-          <input type="radio" name="genCategory" value="붙임머리" id="genCat1" style="accent-color:var(--accent);">
+          <input type="radio" name="genCategory" value="extension" id="genCat1" style="accent-color:var(--accent);">
           붙임머리
         </label>
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px; font-weight:600; color:var(--text);">
-          <input type="radio" name="genCategory" value="네일" id="genCat2" style="accent-color:var(--accent);">
+          <input type="radio" name="genCategory" value="nail" id="genCat2" style="accent-color:var(--accent);">
           네일
         </label>
       </div>
