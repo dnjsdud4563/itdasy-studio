@@ -1,19 +1,8 @@
 // Itdasy Studio - C7.5 캡션 생성 탭
 // 파일: app-generate.js
 // 의존: app-core.js 의 API, authHeader(), handle401()
-
-// ── 로컬 fetch 헬퍼 ──────────────────────────────────────────────
-async function _genFetch(method, path, body) {
-  const headers = { ...authHeader() };
-  let bodyStr;
-  if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-    bodyStr = JSON.stringify(body);
-  }
-  const res = await fetch(API + path, { method, headers, body: bodyStr });
-  if (res.status === 401) { handle401(); throw new Error('401'); }
-  return res;
-}
+//       app-persona.js 의 _personaFetch (fetch 헬퍼 공유)
+// 에러 처리: 인라인 UI 메시지(_genShowError)로 표시 — persona 탭의 msgEl 방식과 의도적으로 구분
 
 // ── 탭 초기화 ─────────────────────────────────────────────────────
 function initGenerateTab() {
@@ -143,7 +132,6 @@ function _genCheckReady() {
 // ── API 호출 ──────────────────────────────────────────────────────
 async function _genSubmit() {
   const btn = document.getElementById('genSubmitBtn');
-  const regenBtn = document.getElementById('genRegenBtn');
   const errorEl = document.getElementById('genError');
 
   // 연타 방지
@@ -160,7 +148,7 @@ async function _genSubmit() {
   if (memo) payload.memo = memo;
 
   try {
-    const res = await _genFetch('POST', '/persona/generate/caption', payload);
+    const res = await _personaFetch('POST', '/persona/generate/caption', payload);
 
     if (res.ok) {
       const data = await res.json();
