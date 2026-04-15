@@ -165,10 +165,11 @@
 <div class="nav" id="nav">
   <button class="nav-btn active" onclick="showTab('home',this)">홈</button>
   <button class="nav-btn" onclick="showTab('workshop',this); initWorkshopTab()">작업실</button>
-  <button class="nav-btn" onclick="showTab('caption',this); initGenerateTab()">글쓰기</button>
+  <button class="nav-btn" onclick="showTab('caption',this); initCaptionSlotPicker(); if(typeof renderCaptionKeywordTags==='function')renderCaptionKeywordTags();">글쓰기</button>
   <button class="nav-btn" onclick="showTab('ai-suggest',this); initAiRecommendTab()">AI추천</button>
   <button class="nav-btn" onclick="showTab('finish',this); initFinishTab()">마무리</button>
   <button class="nav-btn" onclick="showTab('persona',this); initPersonaTab()">페르소나</button>
+  <button class="nav-btn" onclick="showTab('generate',this); initGenerateTab()">캡션 생성</button>
 </div>
 
 <!-- 홈 탭 -->
@@ -320,9 +321,101 @@
   <div id="workshopRoot"></div>
 </div>
 
-<!-- 피드 글 작성 탭 (글쓰기) — C8: 신캡션 파이프라인으로 교체 -->
+<!-- 피드 글 작성 탭 (글쓰기) -->
 <div class="tab" id="tab-caption">
-  <div id="generateRoot"></div>
+  <div class="sec-title">피드 글 + 해시태그 생성</div>
+  <div class="sec-sub">내 말투 그대로 AI가 대신 써드려요 🎀</div>
+
+  <!-- 작업실 슬롯 연동 피커 -->
+  <div id="captionSlotPicker" style="display:none; margin-bottom:12px;"></div>
+
+  <div class="input-card">
+    <!-- ① 시술 특징 (동적 키워드 태그) -->
+    <label id="typeTagLabel">시술 특징</label>
+    <div class="tag-row" id="typeTags">
+      <!-- renderCaptionKeywordTags()로 동적 렌더링 -->
+    </div>
+
+    <!-- ② 손님 상황 (선택사항) -->
+    <label style="margin-top:14px;">손님 상황 <span style="font-size:10px;color:var(--text3);font-weight:400;">(선택)</span></label>
+    <input type="text" id="captionSituation" placeholder="예: 남자친구 몰래 시술 대성공 ㅋㅋ" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;">
+
+    <!-- ③ 추가 메모 -->
+    <label style="margin-top:14px;">추가 메모 <span style="font-size:10px;color:var(--text3);font-weight:400;">(선택)</span></label>
+    <textarea id="captionMemo" rows="3"
+      placeholder="키워드만 툭 던져주세요. AI가 찰떡같이 포장해줍니다!"></textarea>
+  </div>
+
+  <button class="btn-main" id="captionBtn" onclick="generateCaption()">캡션 생성 →</button>
+
+  <!-- 90:10 톤 컨트롤러 -->
+  <div id="toneController" style="margin-top:12px; background:rgba(241,128,145,0.04); border:1px solid rgba(241,128,145,0.12); border-radius:16px; padding:14px 16px; display:none;">
+    <div style="font-size:11px; font-weight:700; color:var(--text3); letter-spacing:0.03em; margin-bottom:12px;">글 스타일 조정</div>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+
+      <!-- 글 길이 슬라이더 -->
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:11px; color:var(--text3);">글 길이</span>
+          <span id="lengthLabel" style="font-size:11px; font-weight:700; color:var(--accent2);">보통</span>
+        </div>
+        <div style="position:relative; padding:0 4px;">
+          <div style="position:absolute; top:50%; left:4px; right:4px; height:3px; background:var(--border); border-radius:2px; transform:translateY(-50%); pointer-events:none;"></div>
+          <div id="lengthTrackFill" style="position:absolute; top:50%; left:4px; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:2px; transform:translateY(-50%); pointer-events:none; transition:width 0.15s;"></div>
+          <input type="range" id="lengthSlider" min="0" max="100" step="1" value="50"
+            style="width:100%; -webkit-appearance:none; appearance:none; background:transparent; cursor:pointer; position:relative; z-index:1; margin:0; height:24px; touch-action:none;"
+            oninput="onLengthSlider(this.value)"
+            ontouchstart="event.stopPropagation()"
+            ontouchmove="event.stopPropagation()">
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px; padding:0 4px;">
+          <span style="font-size:9px; color:var(--text3);">짧게</span>
+          <span style="font-size:9px; color:var(--text3);">보통</span>
+          <span style="font-size:9px; color:var(--text3);">길게</span>
+        </div>
+      </div>
+
+      <!-- 분위기 버튼 -->
+      <div>
+        <div style="font-size:11px; color:var(--text3); margin-bottom:6px;">분위기</div>
+        <div class="tc-group" id="tcVibe">
+          <button class="tc-btn" data-v="plain" onclick="setToneCtrl('vibe','plain',this)">담백하게</button>
+          <button class="tc-btn active" data-v="natural" onclick="setToneCtrl('vibe','natural',this)">평소처럼</button>
+          <button class="tc-btn" data-v="decorated" onclick="setToneCtrl('vibe','decorated',this)">꾸밈있게</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 캡션 로딩은 전역 팝업(#captionLoadingPopup)으로 처리 -->
+
+  <!-- 인스타 프레임 결과 -->
+  <div class="insta-frame" id="captionResult" style="display:none;">
+    <div class="insta-frame-header">
+      <div class="frame-avatar-ring">
+        <div class="frame-avatar-inner" id="frameAvatarInner">
+          <span id="frameAvatarLetter">잇</span>
+        </div>
+      </div>
+      <div>
+        <div class="insta-frame-handle" id="frameHandle">@itdasy</div>
+        <div class="insta-frame-meta">방금 · 게시물 미리보기</div>
+      </div>
+    </div>
+    <div class="insta-frame-body">
+      <textarea id="captionText" class="insta-caption-text" style="width:100%; border:none; outline:none; background:transparent; resize:none; font-family:'Pretendard',sans-serif; font-size:13.5px; line-height:1.9; color:var(--text); letter-spacing:-0.01em; white-space:pre-wrap; overflow:hidden;" rows="5" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" placeholder="AI 캡션이 여기에 표시됩니다"></textarea>
+      <textarea id="captionHash" class="insta-hashtag-text" style="width:100%; border:none; outline:none; background:transparent; resize:none; font-family:'Pretendard',sans-serif; font-size:12px; color:var(--accent2); line-height:1.7; margin-top:10px; word-break:break-word; overflow:hidden;" rows="3" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" placeholder="해시태그"></textarea>
+    </div>
+    <div class="insta-frame-actions">
+      <button class="frame-action-btn" onclick="copyCaption()">해시태그 빼고 복사</button>
+      <button class="frame-action-btn primary" onclick="copyAll()">전체 복사 📋</button>
+    </div>
+  </div>
+
+  <!-- 캡션 완료 후 행동유도 (동적 렌더링) -->
+  <div id="captionActionBar" style="display:none; margin-top:12px;"></div>
+  <!-- 캡션 완료 후 인라인 미리보기 (인스타 스타일) -->
+  <div id="captionInlinePreview" style="display:none; margin-top:16px;"></div>
 </div>
 
 
@@ -749,6 +842,10 @@
   <div id="personaRoot"></div>
 </div>
 
+<div class="tab" id="tab-generate">
+  <div id="generateRoot"></div>
+</div>
+
 <!-- 갤러리 슬롯 팝업 -->
 <div id="slotPopup" style="display:none; position:fixed; inset:0; background:#fff; z-index:9000; flex-direction:column; user-select:none; -webkit-user-select:none;" oncontextmenu="return false">
   <div style="position:sticky; top:0; background:#fff; border-bottom:1px solid var(--border); padding:14px 16px; display:flex; align-items:center; gap:12px; z-index:1;">
@@ -857,6 +954,7 @@
 <script src="app-core.js"></script>
 <script src="app-spec-validator.js"></script>
 <script src="app-instagram.js"></script>
+<script src="app-caption.js"></script>
 <script src="app-portfolio.js"></script>
 <script src="app-ai.js"></script>
 <script src="app-gallery.js"></script>
