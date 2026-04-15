@@ -175,6 +175,7 @@ async function _genSubmit() {
   if (memo) payload.extra_notes = memo;
 
   try {
+    window._assertSpec('POST /persona/generate', payload);
     const res = await _personaFetch('POST', '/persona/generate', payload);
 
     if (res.ok) {

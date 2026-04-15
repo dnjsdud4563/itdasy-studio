@@ -213,6 +213,7 @@ async function _ingestManual() {
   btn.disabled = true; btn.textContent = '처리중…';
   msgEl.textContent = `${posts.length}건 전송 중…`;
   try {
+    window._assertSpec('POST /persona/posts/ingest/manual', { posts });
     const res  = await _personaFetch('POST', '/persona/posts/ingest/manual', { posts });
     const data = await res.json();
     if (!res.ok) { msgEl.textContent = '오류: ' + (data.detail || res.status); return; }
@@ -299,14 +300,16 @@ async function _addDetected(idx) {
   if (!c || !btn) return;
   btn.disabled = true; btn.textContent = '처리중…';
   try {
-    const res  = await _personaFetch('POST', '/persona/signature', {
+    const sigBody = {
       label:              `자동감지 #${idx + 1}`,
       content:            c.content,
       position:           c.suggested_position,
       is_default:         true,
       source:             'detected',
       detected_frequency: c.frequency,
-    });
+    };
+    window._assertSpec('POST /persona/signature-blocks', sigBody);
+    const res  = await _personaFetch('POST', '/persona/signature', sigBody);
     const data = await res.json();
     if (!res.ok) {
       btn.textContent = '오류';
@@ -701,6 +704,7 @@ async function _saveIdentity() {
   }
 
   try {
+    window._assertSpec('PUT /persona/identity', body);
     const res  = await _personaFetch('PUT', '/persona/identity', body);
     const data = await res.json();
     if (!res.ok) { msgEl.textContent = '오류: ' + (data.detail || res.status); return; }
@@ -837,10 +841,12 @@ async function _saveConsent() {
   btn.disabled = true; btn.textContent = '저장 중…';
   msgEl.textContent = '';
   try {
-    const res  = await _personaFetch('POST', '/persona/consent', {
+    const consentBody = {
       pipa_collect: true, ai_processing: true,
       versions: {pipa_collect: '1.0', ai_processing: '1.0'},
-    });
+    };
+    window._assertSpec('POST /persona/consent', consentBody);
+    const res  = await _personaFetch('POST', '/persona/consent', consentBody);
     const data = await res.json();
     if (!res.ok) {
       msgEl.textContent = '오류: ' + (data.detail || res.status);
@@ -873,9 +879,9 @@ async function _addManualSig() {
   btn.disabled = true; btn.textContent = '처리중…';
   msgEl.textContent = '';
   try {
-    const res  = await _personaFetch('POST', '/persona/signature', {
-      label, content, position, is_default: isDefault, source: 'manual',
-    });
+    const sigBody = { label, content, position, is_default: isDefault, source: 'manual' };
+    window._assertSpec('POST /persona/signature-blocks', sigBody);
+    const res  = await _personaFetch('POST', '/persona/signature', sigBody);
     const data = await res.json();
     if (!res.ok) { msgEl.textContent = '오류: ' + (data.detail || res.status); return; }
     msgEl.textContent = '추가 완료';
