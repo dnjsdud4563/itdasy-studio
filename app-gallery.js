@@ -581,7 +581,7 @@ function _renderCompletionBanner() {
         banner.innerHTML = `
           <div style="background:rgba(76,175,80,0.1);border:1.5px solid rgba(76,175,80,0.3);border-radius:16px;padding:14px 16px;">
             <div style="font-size:13px;font-weight:700;color:#388e3c;margin-bottom:10px;">🎉 모든 작업 완료!</div>
-            <button onclick="showTab('caption',document.querySelectorAll('.nav-btn')[2]); initCaptionSlotPicker(); if(typeof renderCaptionKeywordTags==='function')renderCaptionKeywordTags();" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:800;cursor:pointer;">지금 글쓰기로 →</button>
+            <button onclick="showTab('caption',document.querySelectorAll('.nav-btn')[2]); initGenerateTab();" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:13px;font-weight:800;cursor:pointer;">지금 글쓰기로 →</button>
           </div>
         `;
       } else {
@@ -592,7 +592,7 @@ function _renderCompletionBanner() {
             <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">${nextLabel} 작업할까요? <span style="color:var(--text3);font-weight:400;">(완료 ${done}/${total})</span></div>
             <div style="display:flex;gap:8px;">
               ${nextSlot ? `<button onclick="openSlotPopup('${nextSlot.id}')" style="flex:1;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:12px;font-weight:700;cursor:pointer;">${nextLabel} →</button>` : ''}
-              <button onclick="showTab('caption',document.querySelectorAll('.nav-btn')[2]); initCaptionSlotPicker(); if(typeof renderCaptionKeywordTags==='function')renderCaptionKeywordTags();" style="flex:1;padding:10px 14px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;">지금 글쓰기로 →</button>
+              <button onclick="showTab('caption',document.querySelectorAll('.nav-btn')[2]); initGenerateTab();" style="flex:1;padding:10px 14px;border-radius:10px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;">지금 글쓰기로 →</button>
             </div>
           </div>
         `;
@@ -765,7 +765,7 @@ function _showNextSlotGuide(nextSlot, doneCount, totalCount) {
       </div>
       <div style="display:flex;gap:10px;">
         <button onclick="document.getElementById('_nextSlotGuide').style.display='none';openSlotPopup('${nextSlot.id}')" style="flex:1;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:14px;font-weight:800;cursor:pointer;">${nextSlot.label} →</button>
-        <button onclick="document.getElementById('_nextSlotGuide').style.display='none';showTab('caption',document.querySelectorAll('.nav-btn')[2]);initCaptionSlotPicker();if(typeof renderCaptionKeywordTags==='function')renderCaptionKeywordTags();" style="flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;">지금 글쓰기로 →</button>
+        <button onclick="document.getElementById('_nextSlotGuide').style.display='none';showTab('caption',document.querySelectorAll('.nav-btn')[2]);initGenerateTab();" style="flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font-size:14px;font-weight:700;cursor:pointer;">지금 글쓰기로 →</button>
       </div>
     </div>
   `;
@@ -2127,9 +2127,14 @@ function _initInstaCarousel(id, total) {
 }
 
 // ═══════════════════════════════════════════════════════
-// 글쓰기 탭 — 슬롯 픽커
+// 글쓰기 탭 — 슬롯 픽커 (C8: 구 app-caption.js 종속 코드 스텁)
+// TODO C4.5: re-wire to generateRoot (슬롯 컨텍스트 신파이프라인 연결)
 // ═══════════════════════════════════════════════════════
 function initCaptionSlotPicker() {
+  // 구 captionSlotPicker DOM 제거됨 — initGenerateTab()으로 대체
+  // 아래 코드는 신 generateRoot가 슬롯 컨텍스트를 받을 때까지 비활성 유지
+  return;
+  /* --- 비활성화된 구 로직 ---
   const doneSlots = _slots.filter(s => s.status === 'done' && s.photos.length > 0);
   const container = document.getElementById('captionSlotPicker');
   if (!container) return;
@@ -2157,6 +2162,7 @@ function initCaptionSlotPicker() {
       <div id="captionSlotPhotoStrip" style="display:none;margin-top:10px;"></div>
     </div>
   `;
+  --- 비활성화된 구 로직 끝 --- */
 }
 
 async function loadSlotForCaption(slotId) {
@@ -2643,8 +2649,8 @@ async function _deferSlot(slotId) {
 function writeSlotCaption(slotId) {
   showTab('caption', document.querySelectorAll('.nav-btn')[2]);
   setTimeout(() => {
-    loadSlotForCaption(slotId);
-    initCaptionSlotPicker();
+    // TODO C4.5: re-wire to generateRoot (슬롯 컨텍스트 전달)
+    initGenerateTab();
   }, 100);
 }
 

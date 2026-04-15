@@ -283,7 +283,7 @@ function _genRenderTaboo(flags) {
 function _genShowError(codeOrMsg) {
   const messages = {
     'identity_incomplete': '페르소나 탭 필수 5필드부터 채워주세요',
-    'fingerprint_missing': "페르소나 탭 '말투 지문 추출' 먼저 실행해주세요",
+    'fingerprint_missing': "포스트가 5개 이상 필요합니다. 인스타 연동에서 포스트를 더 불러와주세요.",
     'consent_missing': '페르소나 탭 하단 동의를 먼저 해주세요',
     '__500__': '일시적 오류. 다시 시도해주세요',
   };

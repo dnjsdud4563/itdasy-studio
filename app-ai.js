@@ -194,7 +194,7 @@ async function _goToSlotStep(slotId) {
     // 캡션 없음 → 글쓰기 탭으로 (해당 슬롯 선택)
     window._selectedSlotForCaption = slot;
     showTab('caption', document.querySelectorAll('.nav-btn')[2]);
-    if (typeof initCaptionTab === 'function') initCaptionTab();
+    initGenerateTab();
   } else {
     // 완성 → 마무리 탭으로
     _goToFinishSlot(slotId);
