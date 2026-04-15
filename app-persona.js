@@ -21,7 +21,7 @@ const TONE_OPTIONS = [
   {key:"mixed",           label:"혼합",      example:"상황별로 다르게"},
 ];
 
-// ── 공용 fetch 헬퍼 (app-generate.js 에서도 참조) ────────────────
+// ── 공용 fetch 헬퍼 (app-caption.js 에서도 참조) ────────────────
 async function _personaFetch(method, path, body) {
   const headers = { ...authHeader() };
   let bodyStr;
