@@ -535,8 +535,7 @@ function showAddKeywordInput() {
   }, 50);
 }
 
-// ===== 캡션 생성 — 신 파이프라인 POST /persona/generate =====
-// TD-019: tone_override, length_tier 백엔드 필드 추가 필요 (현재 hint 폴백)
+// ===== 캡션 생성 — POST /persona/generate =====
 // TD-020: POST /persona/generate 해시태그 반환 필드 추가 필요
 
 // shopType → schemas.json category enum 매핑
@@ -550,9 +549,11 @@ const _CAP_ERR_MSG = {
   'fingerprint_missing': '포스트가 5개 이상 필요합니다. 인스타 연동에서 포스트를 더 불러와주세요.',
 };
 
-// hint 폴백용 레이블 (TD-019 완료 전 사용)
-const _CAP_TONE_LABEL = {plain:'담백', natural:'평소', ornate:'꾸밈'};
-const _CAP_LEN_LABEL  = {short:'짧게', normal:'보통', long:'길게'};
+// _toneCtrl → payload 필드 변환 헬퍼
+// length: 'short'|'normal'|'long' → length_tier: 'short'|'medium'|'long'
+// vibe:   'plain'|'natural'|'ornate' → tone_override: 'plain'|'normal'|'ornate'
+function _capLengthTier(l) { return l === 'normal' ? 'medium' : l; }
+function _capToneOverride(v) { return v === 'natural' ? 'normal' : v; }
 
 async function generateCaption() {
   const types = getSel('typeTags');
@@ -575,19 +576,15 @@ async function generateCaption() {
     : '';
   const situationNote = situation ? `손님상황: ${situation}. ` : '';
 
-  // 신 API payload 구성
-  const category = _CAP_CAT_MAP[shopType] || 'extension';
+  // payload 구성 — 토글 상태를 API 필드에 직접 매핑
+  const category      = _CAP_CAT_MAP[shopType] || 'extension';
   const photo_context = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. ${slotNote}${situationNote}${memo || ''}`.trim();
+  const length_tier   = _capLengthTier(_toneCtrl.length);    // short|medium|long
+  const tone_override = _capToneOverride(_toneCtrl.vibe);    // plain|normal|ornate
 
-  // TD-019 전 hint 폴백: 말투/길이 비기본값일 때만 prepend
-  const hintParts = [];
-  if (_toneCtrl.vibe   && _toneCtrl.vibe   !== 'natural') hintParts.push(`말투: ${_CAP_TONE_LABEL[_toneCtrl.vibe]   || _toneCtrl.vibe}`);
-  if (_toneCtrl.length && _toneCtrl.length !== 'normal')  hintParts.push(`길이: ${_CAP_LEN_LABEL[_toneCtrl.length]  || _toneCtrl.length}`);
+  const payload = { category, photo_context, length_tier, tone_override };
 
-  const payload = { category, photo_context };
-  if (hintParts.length) payload.hint = hintParts.join('\n'); // TD-019: tone_override, length_tier 로 교체 예정
-
-  // spec validator (unknown fields 경고만, MISMATCH 없음)
+  // spec validator
   if (typeof window._assertSpec === 'function') window._assertSpec('POST /persona/generate', payload);
 
   try {
@@ -607,6 +604,15 @@ async function generateCaption() {
 
     const finalCaption = data.caption || '';
     const hashes = ''; // TD-020: POST /persona/generate 해시태그 미반환 — 추후 추가 예정
+
+    // [WIRING] 요청값 vs 서버 응답값 일치 확인
+    const respLT = data.length_tier;
+    const respTO = data.used_tone;
+    if (respLT && respLT !== length_tier)
+      console.warn('[WIRING-MISMATCH] length_tier sent:', length_tier, '/ server used:', respLT);
+    if (respTO && respTO !== tone_override)
+      console.warn('[WIRING-MISMATCH] tone_override sent:', tone_override, '/ server used:', respTO);
+    console.log('[WIRING] sent:', { length_tier, tone_override }, '| resp:', { length_tier: respLT, used_tone: respTO });
 
     // 슬롯머신 마지막 릴 잠금 후 결과 표시
     hideCaptionLoader(true, () => {
