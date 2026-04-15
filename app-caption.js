@@ -313,18 +313,33 @@ function onLengthSlider(rawVal) {
   }, 500);
 }
 
+// tone_preference → vibe 매핑 (initToneController에서 사용)
+const _TONE_PREF_MAP = {
+  casual_friendly: 'natural',
+  polite_formal:   'natural',
+  lively_emoji:    'ornate',
+  calm_premium:    'plain',
+  mixed:           'natural',
+};
+
 function initToneController() {
-  fetch(API + '/shop/persona', { headers: authHeader() })
+  // length: /shop/persona 에서 로드 (저장 유지)
+  // vibe:   /persona/identity 에서 tone_preference 로드 (1회성 기본값, 저장 안 함)
+  const lenP = fetch(API + '/shop/persona', { headers: authHeader() })
     .then(r => r.ok ? r.json() : null)
-    .then(p => {
-      if (!p) return;
-      document.getElementById('toneController').style.display = 'block';
-      _toneCtrl.length = p.length_mode || 'normal';
-      _toneCtrl.vibe   = p.vibe_mode   || 'natural';
-      _syncLengthSlider(_toneCtrl.length);
-      _syncTcButtons('tcVibe', _toneCtrl.vibe);
-    })
-    .catch(() => {});
+    .catch(() => null);
+  const idP = _personaFetch('GET', '/persona/identity')
+    .then(r => r.ok ? r.json() : null)
+    .catch(() => null);
+
+  Promise.all([lenP, idP]).then(([persona, identity]) => {
+    document.getElementById('toneController').style.display = 'block';
+    _toneCtrl.length = persona?.length_mode || 'normal';
+    const tonePref   = identity?.tone_preference;
+    _toneCtrl.vibe   = _TONE_PREF_MAP[tonePref] || 'natural';
+    _syncLengthSlider(_toneCtrl.length);
+    _syncTcButtons('tcVibe', _toneCtrl.vibe);
+  }).catch(() => {});
 }
 
 function _syncTcButtons(groupId, activeVal) {
@@ -343,13 +358,9 @@ function setToneCtrl(type, val, el) {
       body: JSON.stringify({ length_mode: val }),
     }).catch(() => {});
   } else {
+    // vibe: 1회성 in-memory override — 서버에 저장하지 않음 (TD-019)
     _syncTcButtons('tcVibe', val);
     _toneCtrl.vibe = val;
-    fetch(API + '/shop/persona', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ vibe_mode: val }),
-    }).catch(() => {});
   }
 }
 
@@ -524,7 +535,25 @@ function showAddKeywordInput() {
   }, 50);
 }
 
-// ===== 캡션 생성 =====
+// ===== 캡션 생성 — 신 파이프라인 POST /persona/generate =====
+// TD-019: tone_override, length_tier 백엔드 필드 추가 필요 (현재 hint 폴백)
+// TD-020: POST /persona/generate 해시태그 반환 필드 추가 필요
+
+// shopType → schemas.json category enum 매핑
+const _CAP_CAT_MAP = {'붙임머리':'extension','네일아트':'nail','네일':'nail'};
+
+// 400 에러 코드 → 사용자 안내 메시지
+const _CAP_ERR_MSG = {
+  'identity_incomplete': '페르소나 탭 필수 5필드부터 채워주세요',
+  'consent_missing':     '페르소나 탭 하단 동의를 먼저 해주세요',
+  'insufficient_posts':  '포스트가 5개 이상 필요합니다. 인스타 연동에서 포스트를 더 불러와주세요.',
+  'fingerprint_missing': '포스트가 5개 이상 필요합니다. 인스타 연동에서 포스트를 더 불러와주세요.',
+};
+
+// hint 폴백용 레이블 (TD-019 완료 전 사용)
+const _CAP_TONE_LABEL = {plain:'담백', natural:'평소', ornate:'꾸밈'};
+const _CAP_LEN_LABEL  = {short:'짧게', normal:'보통', long:'길게'};
+
 async function generateCaption() {
   const types = getSel('typeTags');
 
@@ -539,32 +568,47 @@ async function generateCaption() {
   const shopType = localStorage.getItem('shop_type') || '붙임머리';
   const cfg = SHOP_CONFIG[shopType] || SHOP_CONFIG['붙임머리'];
   const typeStr = types.length > 0 ? types.join(', ') : cfg.defaultTag;
-  // 작업실 슬롯 연결 정보 포함
+
+  // 작업실 슬롯 연결 정보
   const slotNote = (typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined')
     ? (() => { const s = _slots.find(sl => sl.id === _captionSlotId); return s ? `손님: ${s.label}. 사진 ${s.photos.filter(p=>!p.hidden).length}장. ` : ''; })()
     : '';
   const situationNote = situation ? `손님상황: ${situation}. ` : '';
-  const description = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. 업종: ${shopType}. ${slotNote}${situationNote}${memo || ''}`;
+
+  // 신 API payload 구성
+  const category = _CAP_CAT_MAP[shopType] || 'extension';
+  const photo_context = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. ${slotNote}${situationNote}${memo || ''}`.trim();
+
+  // TD-019 전 hint 폴백: 말투/길이 비기본값일 때만 prepend
+  const hintParts = [];
+  if (_toneCtrl.vibe   && _toneCtrl.vibe   !== 'natural') hintParts.push(`말투: ${_CAP_TONE_LABEL[_toneCtrl.vibe]   || _toneCtrl.vibe}`);
+  if (_toneCtrl.length && _toneCtrl.length !== 'normal')  hintParts.push(`길이: ${_CAP_LEN_LABEL[_toneCtrl.length]  || _toneCtrl.length}`);
+
+  const payload = { category, photo_context };
+  if (hintParts.length) payload.hint = hintParts.join('\n'); // TD-019: tone_override, length_tier 로 교체 예정
+
+  // spec validator (unknown fields 경고만, MISMATCH 없음)
+  if (typeof window._assertSpec === 'function') window._assertSpec('POST /persona/generate', payload);
 
   try {
-    const res = await fetch(API + '/caption/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({
-        description,
-        platform: 'instagram',
-        length_mode: _toneCtrl.length || 'normal',
-        vibe_mode: _toneCtrl.vibe || 'natural',
-      })
-    });
-    if (res.status === 401) { setToken(null); document.getElementById('lockOverlay').classList.remove('hidden'); throw new Error('로그인이 필요합니다.'); }
+    const res = await _personaFetch('POST', '/persona/generate', payload);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || '생성 실패');
 
-    const finalCaption = data.caption;
-    const hashes = Array.isArray(data.hashtags) ? shuffleHashtags(data.hashtags).map(h => h.startsWith('#') ? h : '#' + h).join(' ') : data.hashtags;
+    if (!res.ok) {
+      const code = data.code || data.detail || '';
+      const msg = _CAP_ERR_MSG[code] || '캡션 생성에 실패했습니다. 다시 시도해주세요.';
+      hideCaptionLoader(false, () => {
+        showToast(msg);
+        btn.innerHTML = '다시 만들기 ✨';
+        btn.disabled = false;
+      });
+      return;
+    }
 
-    // 슬롯머신의 마지막 릴 잠금 후 1초 뒤에 결과가 표시되도록 hideCaptionLoader에 데이터도 같이 전달
+    const finalCaption = data.caption || '';
+    const hashes = ''; // TD-020: POST /persona/generate 해시태그 미반환 — 추후 추가 예정
+
+    // 슬롯머신 마지막 릴 잠금 후 결과 표시
     hideCaptionLoader(true, () => {
       document.getElementById('captionText').value = finalCaption;
       document.getElementById('captionHash').value = hashes;
@@ -631,13 +675,14 @@ async function generateCaption() {
         }
       }
     });
-    return; // 아래 btn 복원은 onClose 콜백에서 처리
+    return; // btn 복원은 onClose 콜백에서 처리
   } catch(e) {
-    document.getElementById('captionText').value = '오류가 났어요: ' + e.message;
-    document.getElementById('captionHash').value = '';
-    hideCaptionLoader(false, () => { document.getElementById('captionResult').style.display = 'block'; });
-    btn.innerHTML = '다시 만들기 ✨';
-    btn.disabled = false;
+    if (e.message === '401') return; // _personaFetch가 401 처리
+    hideCaptionLoader(false, () => {
+      showToast('일시적 오류. 다시 시도해주세요.');
+      btn.innerHTML = '다시 만들기 ✨';
+      btn.disabled = false;
+    });
   }
 }
 
