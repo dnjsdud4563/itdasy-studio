@@ -131,8 +131,29 @@ function _renderShell() {
       </div>
     </div>
   </div>
+
+  <!-- 말투 재분석 링크 -->
+  <div style="text-align:center;padding:8px 0 4px;">
+    <button onclick="_refreshFingerprint()" style="background:none;border:none;font-size:12px;color:var(--text3);cursor:pointer;text-decoration:underline;padding:4px 8px;">말투 다시 분석</button>
+  </div>
 </div>
   `;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// 말투 재분석 (POST /persona/fingerprint/refresh)
+// ─────────────────────────────────────────────────────────────────
+async function _refreshFingerprint() {
+  showToast('분석 중...');
+  try {
+    const res = await _personaFetch('POST', '/persona/fingerprint/refresh');
+    if (!res.ok) { showToast('분석 실패: ' + res.status); return; }
+    const d = await res.json();
+    const n = d.source_post_count ?? d.post_count ?? '';
+    showToast('분석 완료' + (n ? ` (${n}개 포스트 반영)` : ''));
+  } catch(e) {
+    if (e.message !== '401') showToast('분석 오류: ' + e.message);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────

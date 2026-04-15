@@ -2185,6 +2185,10 @@ async function loadSlotForCaption(slotId) {
   }
 
   showToast(`${slot.label} 연결됐어요 ✅`);
+
+  // 단일 작업 카드의 사진 영역 갱신 (app-caption.js)
+  if (typeof _captionPhotosReordered !== 'undefined') _captionPhotosReordered = null;
+  if (typeof _renderCaptionPhotoRow === 'function') _renderCaptionPhotoRow();
 }
 
 // _csSwipe replaced by _initPeekCarousel

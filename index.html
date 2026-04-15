@@ -322,99 +322,70 @@
 
 <!-- 피드 글 작성 탭 (글쓰기) -->
 <div class="tab" id="tab-caption">
-  <div class="sec-title">피드 글 + 해시태그 생성</div>
-  <div class="sec-sub">내 말투 그대로 AI가 대신 써드려요 🎀</div>
+  <div style="padding:16px 16px 100px;">
 
-  <!-- 작업실 슬롯 연동 피커 -->
-  <div id="captionSlotPicker" style="display:none; margin-bottom:12px;"></div>
+    <!-- 슬롯 피커 (app-gallery.js 렌더링) -->
+    <div id="captionSlotPicker" style="display:none; margin-bottom:12px;"></div>
 
-  <div class="input-card">
-    <!-- ① 시술 특징 (동적 키워드 태그) -->
-    <label id="typeTagLabel">시술 특징</label>
-    <div class="tag-row" id="typeTags">
-      <!-- renderCaptionKeywordTags()로 동적 렌더링 -->
+    <!-- 단일 작업 카드 -->
+    <div style="background:#fff;border-radius:18px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;">
+
+      <!-- [상단] 사진 영역 -->
+      <div id="captionPhotoRow" style="padding:12px 14px;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;">사진</div>
+        <div id="captionPhotoThumbRow" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;align-items:center;min-height:80px;">
+          <div onclick="_captionOpenSlotPicker()" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text3);cursor:pointer;flex-shrink:0;">📷</div>
+        </div>
+      </div>
+
+      <!-- [중단 sticky] 컨트롤 바 -->
+      <div id="captionCtrlBar" style="position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div id="capLenGroup" style="display:flex;border-radius:8px;border:1.5px solid var(--border);overflow:hidden;flex-shrink:0;">
+          <button class="cap-len-btn" data-v="short" onclick="setToneCtrl('length','short',this)" style="padding:6px 10px;border:none;background:transparent;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all 0.15s;">짧게</button>
+          <button class="cap-len-btn" data-v="normal" onclick="setToneCtrl('length','normal',this)" style="padding:6px 10px;border:none;background:transparent;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all 0.15s;">보통</button>
+          <button class="cap-len-btn" data-v="long" onclick="setToneCtrl('length','long',this)" style="padding:6px 10px;border:none;background:transparent;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all 0.15s;">길게</button>
+        </div>
+        <div id="capVibeGroup" style="display:flex;border-radius:8px;border:1.5px solid var(--border);overflow:hidden;flex:1;min-width:120px;">
+          <button class="cap-vibe-btn" data-v="plain" onclick="setToneCtrl('vibe','plain',this)" style="flex:1;padding:6px 0;border:none;background:transparent;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all 0.15s;">담백</button>
+          <button class="cap-vibe-btn" data-v="natural" onclick="setToneCtrl('vibe','natural',this)" style="flex:1;padding:6px 0;border:none;background:transparent;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all 0.15s;">평소</button>
+          <button class="cap-vibe-btn" data-v="ornate" onclick="setToneCtrl('vibe','ornate',this)" style="flex:1;padding:6px 0;border:none;background:transparent;font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all 0.15s;">꾸밈</button>
+        </div>
+        <button id="captionBtn" onclick="generateCaption()" style="padding:7px 12px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">다시 만들기 ✨</button>
+      </div>
+
+      <!-- [하단] 캡션 편집 영역 (WYSIWYG) -->
+      <div style="padding:14px;">
+        <textarea id="captionText"
+          oninput="_capAutoGrow(this);_capSchedulePatch(this.value)"
+          placeholder="'다시 만들기 ✨'를 눌러 AI 캡션을 생성하세요"
+          style="width:100%;box-sizing:border-box;min-height:160px;padding:0;border:none;outline:none;font-family:'Pretendard',sans-serif;font-size:14px;line-height:1.8;color:var(--text);resize:none;background:transparent;overflow:hidden;display:block;"></textarea>
+        <div id="captionEditMicro" style="display:none;font-size:11px;color:var(--text3);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <span>수정하면 자동 저장됩니다</span><span id="captionEditPct"></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button onclick="copyCaption()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;">복사 📋</button>
+        </div>
+      </div>
     </div>
 
-    <!-- ② 손님 상황 (선택사항) -->
-    <label style="margin-top:14px;">손님 상황 <span style="font-size:10px;color:var(--text3);font-weight:400;">(선택)</span></label>
-    <input type="text" id="captionSituation" placeholder="예: 남자친구 몰래 시술 대성공 ㅋㅋ" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;">
+    <!-- 시술 정보 입력 카드 -->
+    <div style="background:#fff;border-radius:18px;border:1px solid var(--border);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px;">시술 정보</div>
+      <label id="typeTagLabel" style="font-size:12px;font-weight:600;color:var(--text2);">시술 특징</label>
+      <div class="tag-row" id="typeTags" style="margin-top:6px;"></div>
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-top:14px;">손님 상황 <span style="font-size:10px;color:var(--text3);font-weight:400;">(선택)</span></label>
+      <input type="text" id="captionSituation" placeholder="예: 남자친구 몰래 시술 대성공 ㅋㅋ" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;margin-top:6px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-top:14px;">추가 메모 <span style="font-size:10px;color:var(--text3);font-weight:400;">(선택)</span></label>
+      <textarea id="captionMemo" rows="2" placeholder="키워드만 툭 던져주세요. AI가 찰떡같이 포장해줍니다!" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;resize:none;margin-top:6px;"></textarea>
+    </div>
 
-    <!-- ③ 추가 메모 -->
-    <label style="margin-top:14px;">추가 메모 <span style="font-size:10px;color:var(--text3);font-weight:400;">(선택)</span></label>
-    <textarea id="captionMemo" rows="3"
-      placeholder="키워드만 툭 던져주세요. AI가 찰떡같이 포장해줍니다!"></textarea>
+    <!-- 캡션 완료 후 행동유도 (동적 렌더링) -->
+    <div id="captionActionBar" style="display:none;margin-bottom:12px;"></div>
+
+    <!-- 히든: 해시태그 보관 (TD-020 노출 예정) -->
+    <textarea id="captionHash" style="display:none;"></textarea>
+
   </div>
-
-  <button class="btn-main" id="captionBtn" onclick="generateCaption()">캡션 생성 →</button>
-
-  <!-- 90:10 톤 컨트롤러 -->
-  <div id="toneController" style="margin-top:12px; background:rgba(241,128,145,0.04); border:1px solid rgba(241,128,145,0.12); border-radius:16px; padding:14px 16px; display:none;">
-    <div style="font-size:11px; font-weight:700; color:var(--text3); letter-spacing:0.03em; margin-bottom:12px;">글 스타일 조정</div>
-    <div style="display:flex; flex-direction:column; gap:14px;">
-
-      <!-- 글 길이 슬라이더 -->
-      <div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="font-size:11px; color:var(--text3);">글 길이</span>
-          <span id="lengthLabel" style="font-size:11px; font-weight:700; color:var(--accent2);">보통</span>
-        </div>
-        <div style="position:relative; padding:0 4px;">
-          <div style="position:absolute; top:50%; left:4px; right:4px; height:3px; background:var(--border); border-radius:2px; transform:translateY(-50%); pointer-events:none;"></div>
-          <div id="lengthTrackFill" style="position:absolute; top:50%; left:4px; height:3px; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:2px; transform:translateY(-50%); pointer-events:none; transition:width 0.15s;"></div>
-          <input type="range" id="lengthSlider" min="0" max="100" step="1" value="50"
-            style="width:100%; -webkit-appearance:none; appearance:none; background:transparent; cursor:pointer; position:relative; z-index:1; margin:0; height:24px; touch-action:none;"
-            oninput="onLengthSlider(this.value)"
-            ontouchstart="event.stopPropagation()"
-            ontouchmove="event.stopPropagation()">
-        </div>
-        <div style="display:flex; justify-content:space-between; margin-top:4px; padding:0 4px;">
-          <span style="font-size:9px; color:var(--text3);">짧게</span>
-          <span style="font-size:9px; color:var(--text3);">보통</span>
-          <span style="font-size:9px; color:var(--text3);">길게</span>
-        </div>
-      </div>
-
-      <!-- 분위기 버튼 -->
-      <div>
-        <div style="font-size:11px; color:var(--text3); margin-bottom:6px;">분위기</div>
-        <div class="tc-group" id="tcVibe">
-          <button class="tc-btn" data-v="plain" onclick="setToneCtrl('vibe','plain',this)">담백하게</button>
-          <button class="tc-btn active" data-v="natural" onclick="setToneCtrl('vibe','natural',this)">평소처럼</button>
-          <button class="tc-btn" data-v="decorated" onclick="setToneCtrl('vibe','decorated',this)">꾸밈있게</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 캡션 로딩은 전역 팝업(#captionLoadingPopup)으로 처리 -->
-
-  <!-- 인스타 프레임 결과 -->
-  <div class="insta-frame" id="captionResult" style="display:none;">
-    <div class="insta-frame-header">
-      <div class="frame-avatar-ring">
-        <div class="frame-avatar-inner" id="frameAvatarInner">
-          <span id="frameAvatarLetter">잇</span>
-        </div>
-      </div>
-      <div>
-        <div class="insta-frame-handle" id="frameHandle">@itdasy</div>
-        <div class="insta-frame-meta">방금 · 게시물 미리보기</div>
-      </div>
-    </div>
-    <div class="insta-frame-body">
-      <textarea id="captionText" class="insta-caption-text" style="width:100%; border:none; outline:none; background:transparent; resize:none; font-family:'Pretendard',sans-serif; font-size:13.5px; line-height:1.9; color:var(--text); letter-spacing:-0.01em; white-space:pre-wrap; overflow:hidden;" rows="5" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" placeholder="AI 캡션이 여기에 표시됩니다"></textarea>
-      <textarea id="captionHash" class="insta-hashtag-text" style="width:100%; border:none; outline:none; background:transparent; resize:none; font-family:'Pretendard',sans-serif; font-size:12px; color:var(--accent2); line-height:1.7; margin-top:10px; word-break:break-word; overflow:hidden;" rows="3" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" placeholder="해시태그"></textarea>
-    </div>
-    <div class="insta-frame-actions">
-      <button class="frame-action-btn" onclick="copyCaption()">해시태그 빼고 복사</button>
-      <button class="frame-action-btn primary" onclick="copyAll()">전체 복사 📋</button>
-    </div>
-  </div>
-
-  <!-- 캡션 완료 후 행동유도 (동적 렌더링) -->
-  <div id="captionActionBar" style="display:none; margin-top:12px;"></div>
-  <!-- 캡션 완료 후 인라인 미리보기 (인스타 스타일) -->
-  <div id="captionInlinePreview" style="display:none; margin-top:16px;"></div>
 </div>
 
 

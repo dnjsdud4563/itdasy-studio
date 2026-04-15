@@ -266,52 +266,26 @@ async function saveOnboardingCaption() {
   }
 }
 
-// ===== 90:10 톤 컨트롤러 =====
+// ===== 톤 컨트롤러 (길이 + 말투 버튼 그룹) =====
 let _toneCtrl = { length: 'normal', vibe: 'natural' };
 
-const LENGTH_VALS = ['short', 'normal', 'long'];
-const LENGTH_LABELS = { short: '짧게', normal: '보통', long: '길게' };
-
-// 0~100 연속 슬라이더 → 구간 매핑 (0~33:short, 34~66:normal, 67~100:long)
-function _sliderToMode(v) {
-  const n = parseInt(v, 10);
-  if (n <= 33) return 'short';
-  if (n >= 67) return 'long';
-  return 'normal';
+// 버튼 그룹 active 상태 동기화
+function _syncCapLenBtn(val) {
+  document.querySelectorAll('#capLenGroup .cap-len-btn').forEach(b => {
+    const on = b.dataset.v === val;
+    b.style.background = on ? 'var(--accent)' : 'transparent';
+    b.style.color = on ? '#fff' : 'var(--text3)';
+  });
 }
-function _modeToSlider(mode) {
-  return mode === 'short' ? 16 : mode === 'long' ? 84 : 50;
-}
-
-function _syncLengthSlider(val) {
-  const slider = document.getElementById('lengthSlider');
-  const label  = document.getElementById('lengthLabel');
-  const fill   = document.getElementById('lengthTrackFill');
-  if (!slider) return;
-  const sv = _modeToSlider(val);
-  slider.value = sv;
-  if (label) label.textContent = LENGTH_LABELS[val] || '보통';
-  if (fill) fill.style.width = `calc(${sv}% - 4px)`;
+function _syncCapVibeBtn(val) {
+  document.querySelectorAll('#capVibeGroup .cap-vibe-btn').forEach(b => {
+    const on = b.dataset.v === val;
+    b.style.background = on ? 'var(--accent)' : 'transparent';
+    b.style.color = on ? '#fff' : 'var(--text3)';
+  });
 }
 
 let _lengthSaveTimer = null;
-function onLengthSlider(rawVal) {
-  const mode = _sliderToMode(rawVal);
-  const label = document.getElementById('lengthLabel');
-  const fill  = document.getElementById('lengthTrackFill');
-  if (label) label.textContent = LENGTH_LABELS[mode] || '보통';
-  if (fill)  fill.style.width = `calc(${rawVal}% - 4px)`;
-  _toneCtrl.length = mode;
-  // 서버 저장 — 드래그 끝날 때 한 번만
-  clearTimeout(_lengthSaveTimer);
-  _lengthSaveTimer = setTimeout(() => {
-    fetch(API + '/shop/persona', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ length_mode: mode }),
-    }).catch(() => {});
-  }, 500);
-}
 
 // tone_preference → vibe 매핑 (initToneController에서 사용)
 const _TONE_PREF_MAP = {
@@ -333,148 +307,174 @@ function initToneController() {
     .catch(() => null);
 
   Promise.all([lenP, idP]).then(([persona, identity]) => {
-    document.getElementById('toneController').style.display = 'block';
     _toneCtrl.length = persona?.length_mode || 'normal';
     const tonePref   = identity?.tone_preference;
     _toneCtrl.vibe   = _TONE_PREF_MAP[tonePref] || 'natural';
-    _syncLengthSlider(_toneCtrl.length);
-    _syncTcButtons('tcVibe', _toneCtrl.vibe);
+    _syncCapLenBtn(_toneCtrl.length);
+    _syncCapVibeBtn(_toneCtrl.vibe);
   }).catch(() => {});
 }
 
-function _syncTcButtons(groupId, activeVal) {
-  document.querySelectorAll(`#${groupId} .tc-btn`).forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.v === activeVal);
-  });
-}
-
-function setToneCtrl(type, val, el) {
+function setToneCtrl(type, val) {
   if (type === 'length') {
-    _syncLengthSlider(val);
+    _syncCapLenBtn(val);
     _toneCtrl.length = val;
-    fetch(API + '/shop/persona', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ length_mode: val }),
-    }).catch(() => {});
+    clearTimeout(_lengthSaveTimer);
+    _lengthSaveTimer = setTimeout(() => {
+      fetch(API + '/shop/persona', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ length_mode: val }),
+      }).catch(() => {});
+    }, 500);
   } else {
-    // vibe: 1회성 in-memory override — 서버에 저장하지 않음 (TD-019)
-    _syncTcButtons('tcVibe', val);
+    // vibe: 1회성 in-memory override — 서버에 저장하지 않음
+    _syncCapVibeBtn(val);
     _toneCtrl.vibe = val;
   }
 }
 
-// ===== 캡션 탭 Before/After 사진 + 포트폴리오 피커 =====
-let _captionPortfolioOpen = false;
-let _captionSelectedPortfolio = null;
-let _captionPhotos = { before: null, after: null }; // { file, objectUrl, tags }
+// ===== 캡션 탭 사진 영역 (드래그 순서 변경) =====
+let _captionPhotosReordered = null; // 재정렬된 사진 배열 (null = 슬롯 기본 순서)
 
-function toggleCaptionPhotoSection() {
-  const sec = document.getElementById('captionPhotoSection');
-  const btn = document.getElementById('captionPhotoToggleBtn');
-  const open = sec.style.display === 'none' || !sec.style.display;
-  sec.style.display = open ? 'block' : 'none';
-  btn.textContent = open ? '접기 ▲' : '사진 선택 ▼';
-}
-
-function handleCaptionPhoto(input, zone) {
-  const file = input.files[0];
-  if (!file) return;
-  const objectUrl = URL.createObjectURL(file);
-  if (_captionPhotos[zone]?.objectUrl) URL.revokeObjectURL(_captionPhotos[zone].objectUrl);
-  _captionPhotos[zone] = { file, objectUrl };
-
-  const zoneEl = document.getElementById('caption' + (zone === 'before' ? 'Before' : 'After') + 'Zone');
-  const preview = document.getElementById('caption' + (zone === 'before' ? 'Before' : 'After') + 'Preview');
-  const imgEl = document.getElementById('caption' + (zone === 'before' ? 'Before' : 'After') + 'Img');
-  const emptyEl = document.getElementById('caption' + (zone === 'before' ? 'Before' : 'After') + 'Empty');
-  const clearBtn = document.getElementById('caption' + (zone === 'before' ? 'Before' : 'After') + 'Clear');
-
-  imgEl.src = objectUrl;
-  preview.style.display = 'block';
-  emptyEl.style.display = 'none';
-  clearBtn.style.display = 'block';
-  zoneEl.classList.add('has-img');
-  input.value = '';
-  _updateCaptionPhotoInfo();
-}
-
-function clearCaptionPhoto(zone, e) {
-  e && e.stopPropagation();
-  if (_captionPhotos[zone]?.objectUrl) URL.revokeObjectURL(_captionPhotos[zone].objectUrl);
-  _captionPhotos[zone] = null;
-  const isB = zone === 'before';
-  document.getElementById('caption' + (isB ? 'Before' : 'After') + 'Preview').style.display = 'none';
-  document.getElementById('caption' + (isB ? 'Before' : 'After') + 'Empty').style.display = 'block';
-  document.getElementById('caption' + (isB ? 'Before' : 'After') + 'Clear').style.display = 'none';
-  document.getElementById('caption' + (isB ? 'Before' : 'After') + 'Zone').classList.remove('has-img');
-  _updateCaptionPhotoInfo();
-}
-
-function _updateCaptionPhotoInfo() {
-  const infoEl = document.getElementById('captionPhotoInfo');
-  const parts = [];
-  if (_captionPhotos.before) parts.push('BEFORE 사진 1장');
-  if (_captionPhotos.after) parts.push('AFTER 사진 1장');
-  if (parts.length) { infoEl.textContent = '📎 ' + parts.join(' + ') + ' 첨부됨'; infoEl.style.display = 'block'; }
-  else { infoEl.style.display = 'none'; }
-}
-
-async function toggleCaptionPortfolioPicker() {
-  _captionPortfolioOpen = !_captionPortfolioOpen;
-  const wrap = document.getElementById('captionPortfolioPickerWrap');
-  const btn = document.getElementById('captionPortfolioToggleBtn');
-  wrap.style.display = _captionPortfolioOpen ? 'block' : 'none';
-  btn.textContent = _captionPortfolioOpen ? '📂 포트폴리오 닫기' : '📂 포트폴리오에서 가져오기';
-  if (!_captionPortfolioOpen) return;
-  const grid = document.getElementById('captionPortfolioGrid');
-  grid.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;grid-column:1/-1;">불러오는 중...</div>';
-  try {
-    const res = await fetch(API + '/portfolio', { headers: { ...authHeader(), 'ngrok-skip-browser-warning': 'true' } });
-    const items = await res.json();
-    grid.innerHTML = '';
-    if (!items.length) {
-      grid.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;grid-column:1/-1;">포트폴리오가 비어있어요</div>';
-      return;
-    }
-    items.forEach(item => {
-      const src = item.image_url.startsWith('http') ? item.image_url : API + item.image_url;
-      const pt = item.photo_type || 'general';
-      const ptColor = { before: '#6495ed', after: 'var(--accent)', general: 'var(--text3)' };
-      const ptLabel = { before: 'B', after: 'A', general: '' };
-      const cell = document.createElement('div');
-      cell.style.cssText = 'position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:10px; cursor:pointer; transition:all 0.15s;';
-      cell.innerHTML = `<img src="${src}" style="width:100%; height:100%; object-fit:cover; pointer-events:none;">
-        ${ptLabel[pt] ? `<div style="position:absolute;top:3px;right:3px;background:${ptColor[pt]};border-radius:20px;padding:1px 5px;font-size:8px;color:#fff;font-weight:800;">${ptLabel[pt]}</div>` : ''}
-        ${item.main_tag ? `<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(0deg,rgba(0,0,0,0.65),transparent);padding:3px 4px;font-size:7px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.main_tag}</div>` : ''}`;
-      cell.onclick = () => {
-        document.querySelectorAll('#captionPortfolioGrid > div').forEach(c => c.style.outline = '');
-        cell.style.outline = '2.5px solid var(--accent)';
-        _captionSelectedPortfolio = item;
-        // 사진 종류에 맞는 존에 이미지 채우기
-        const targetZone = (pt === 'before') ? 'before' : 'after';
-        const imgEl = document.getElementById('caption' + (targetZone === 'before' ? 'Before' : 'After') + 'Img');
-        const preview = document.getElementById('caption' + (targetZone === 'before' ? 'Before' : 'After') + 'Preview');
-        const emptyEl = document.getElementById('caption' + (targetZone === 'before' ? 'Before' : 'After') + 'Empty');
-        const clearBtn = document.getElementById('caption' + (targetZone === 'before' ? 'Before' : 'After') + 'Clear');
-        const zoneEl = document.getElementById('caption' + (targetZone === 'before' ? 'Before' : 'After') + 'Zone');
-        imgEl.src = src;
-        preview.style.display = 'block';
-        emptyEl.style.display = 'none';
-        clearBtn.style.display = 'block';
-        zoneEl.classList.add('has-img');
-        _captionPhotos[targetZone] = { file: null, objectUrl: src, tags: [item.main_tag, item.tags].filter(Boolean).join(' ') };
-        // 메모에 태그 자동 채우기
-        const memoEl = document.getElementById('captionMemo');
-        const label = [item.main_tag, item.tags].filter(Boolean).join(', ');
-        if (memoEl && !memoEl.value && label) memoEl.value = label;
-        _updateCaptionPhotoInfo();
-      };
-      grid.appendChild(cell);
-    });
-  } catch(e) {
-    grid.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;grid-column:1/-1;">불러오기 실패</div>';
+function _captionOpenSlotPicker() {
+  const picker = document.getElementById('captionSlotPicker');
+  if (picker) {
+    picker.style.display = 'block';
+    if (typeof initCaptionSlotPicker === 'function') initCaptionSlotPicker();
+    picker.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
+}
+
+function _renderCaptionPhotoRow() {
+  const strip = document.getElementById('captionPhotoThumbRow');
+  if (!strip) return;
+
+  const slot = (typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined')
+    ? _slots.find(s => s.id === _captionSlotId) : null;
+
+  if (!slot) {
+    strip.innerHTML = `<div onclick="_captionOpenSlotPicker()" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text3);cursor:pointer;flex-shrink:0;">📷</div>`;
+    return;
+  }
+
+  const basePhotos = slot.photos.filter(p => !p.hidden);
+  if (!_captionPhotosReordered || _captionPhotosReordered._slotId !== _captionSlotId) {
+    _captionPhotosReordered = [...basePhotos];
+    _captionPhotosReordered._slotId = _captionSlotId;
+  }
+
+  strip.innerHTML = '';
+  _captionPhotosReordered.forEach((p, i) => {
+    const src = p.editedDataUrl || p.dataUrl || '';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;flex-shrink:0;user-select:none;';
+    wrap.draggable = true;
+    wrap.dataset.capPhotoIdx = i;
+
+    wrap.innerHTML = `
+      <img src="${src}" draggable="false" style="width:72px;height:72px;object-fit:cover;border-radius:10px;display:block;pointer-events:none;">
+      <button onclick="_removeCapPhoto(${i},event)" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,0.55);color:#fff;font-size:10px;line-height:1;cursor:pointer;">×</button>
+      <div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:8px;color:rgba(255,255,255,0.8);background:rgba(0,0,0,0.35);border-radius:3px;padding:0 3px;">${i+1}</div>
+    `;
+
+    // HTML5 drag (desktop + PWA)
+    wrap.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', String(i)); wrap.style.opacity = '0.4'; });
+    wrap.addEventListener('dragend', () => wrap.style.opacity = '1');
+    wrap.addEventListener('dragover', e => { e.preventDefault(); wrap.style.outline = '2px solid var(--accent)'; });
+    wrap.addEventListener('dragleave', () => wrap.style.outline = '');
+    wrap.addEventListener('drop', e => {
+      e.preventDefault(); wrap.style.outline = '';
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      const toIdx = parseInt(wrap.dataset.capPhotoIdx, 10);
+      if (isNaN(fromIdx) || fromIdx === toIdx) return;
+      const arr = [..._captionPhotosReordered];
+      const [removed] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, removed);
+      _captionPhotosReordered = arr;
+      _captionPhotosReordered._slotId = _captionSlotId;
+      _renderCaptionPhotoRow();
+    });
+
+    // Long-press (300ms) → touch drag
+    let _lpTimer = null, _lpActive = false;
+    wrap.addEventListener('touchstart', () => {
+      _lpTimer = setTimeout(() => {
+        _lpActive = true;
+        wrap.style.opacity = '0.5';
+        if (navigator.vibrate) navigator.vibrate(20);
+      }, 300);
+    }, { passive: true });
+    wrap.addEventListener('touchend', () => {
+      clearTimeout(_lpTimer);
+      if (_lpActive) { wrap.style.opacity = '1'; _lpActive = false; }
+    });
+    wrap.addEventListener('touchmove', e => {
+      if (!_lpActive) { clearTimeout(_lpTimer); return; }
+      e.preventDefault();
+      const touch = e.touches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('[data-cap-photo-idx]');
+      if (el && el !== wrap) {
+        const fromIdx = parseInt(wrap.dataset.capPhotoIdx, 10);
+        const toIdx   = parseInt(el.dataset.capPhotoIdx, 10);
+        const arr = [..._captionPhotosReordered];
+        const [removed] = arr.splice(fromIdx, 1);
+        arr.splice(toIdx, 0, removed);
+        _captionPhotosReordered = arr;
+        _captionPhotosReordered._slotId = _captionSlotId;
+        _renderCaptionPhotoRow();
+      }
+    }, { passive: false });
+
+    strip.appendChild(wrap);
+  });
+
+  const addBtn = document.createElement('div');
+  addBtn.style.cssText = 'width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text3);cursor:pointer;flex-shrink:0;';
+  addBtn.textContent = '+';
+  addBtn.onclick = _captionOpenSlotPicker;
+  strip.appendChild(addBtn);
+}
+
+function _removeCapPhoto(idx, e) {
+  e?.stopPropagation();
+  if (!_captionPhotosReordered) return;
+  const slotId = _captionPhotosReordered._slotId;
+  _captionPhotosReordered = _captionPhotosReordered.filter((_, i) => i !== idx);
+  _captionPhotosReordered._slotId = slotId;
+  _renderCaptionPhotoRow();
+}
+
+
+// ===== 편집 로그 PATCH (debounce 800ms) =====
+let _lastLogId = null;     // 최근 생성된 generation_log.id
+let _capAiDraft = '';      // AI 초안 원본 (edited_amount 계산용)
+let _capPatchTimer = null;
+
+function _capAutoGrow(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 400) + 'px';
+}
+
+function _capSchedulePatch(text) {
+  if (!_lastLogId) return;
+  clearTimeout(_capPatchTimer);
+  _capPatchTimer = setTimeout(() => _capPatchLog(text), 800);
+}
+
+async function _capPatchLog(text) {
+  if (!_lastLogId || !text.trim()) return;
+  // edited_amount: 글자 차이 % (간단 추정)
+  const pct = _capAiDraft
+    ? Math.round(Math.abs(text.length - _capAiDraft.length) / Math.max(_capAiDraft.length, 1) * 100)
+    : 0;
+  const micro = document.getElementById('captionEditMicro');
+  const pctEl = document.getElementById('captionEditPct');
+  if (pctEl) pctEl.textContent = pct > 0 ? `${pct}% 수정됨` : '';
+
+  try {
+    await _personaFetch('PATCH', `/persona/generation_logs/${_lastLogId}`, { final_text: text });
+  } catch(_e) {} // 조용히 실패
 }
 
 // ═══════════════════════════════════════════════════════
@@ -563,7 +563,6 @@ async function generateCaption() {
   const btn = document.getElementById('captionBtn');
   btn.disabled = true;
 
-  document.getElementById('captionResult').style.display = 'none';
   showCaptionLoader();
 
   const shopType = localStorage.getItem('shop_type') || '붙임머리';
@@ -605,6 +604,15 @@ async function generateCaption() {
     const finalCaption = data.caption || '';
     const hashes = ''; // TD-020: POST /persona/generate 해시태그 미반환 — 추후 추가 예정
 
+    // TD-022: 응답에 log_id 없음 — 백엔드 GenerateResponse에 log_id 필드 추가 필요
+    if (data.log_id) {
+      _lastLogId = data.log_id;
+    } else {
+      console.warn('[TD-022] log_id missing in POST /persona/generate response — PATCH 비활성');
+      _lastLogId = null;
+    }
+    _capAiDraft = finalCaption;
+
     // [WIRING] 요청값 vs 서버 응답값 일치 확인
     const respLT = data.length_tier;
     const respTO = data.used_tone;
@@ -614,11 +622,16 @@ async function generateCaption() {
       console.warn('[WIRING-MISMATCH] tone_override sent:', tone_override, '/ server used:', respTO);
     console.log('[WIRING] sent:', { length_tier, tone_override }, '| resp:', { length_tier: respLT, used_tone: respTO });
 
-    // 슬롯머신 마지막 릴 잠금 후 결과 표시
+    // 슬롯머신 마지막 릴 잠금 후 결과를 WYSIWYG textarea에 직접 주입
     hideCaptionLoader(true, () => {
-      document.getElementById('captionText').value = finalCaption;
+      const ta = document.getElementById('captionText');
+      ta.value = finalCaption;
+      _capAutoGrow(ta);
       document.getElementById('captionHash').value = hashes;
-      document.getElementById('captionResult').style.display = 'block';
+
+      // 수정 마이크로카피 표시
+      const micro = document.getElementById('captionEditMicro');
+      if (micro) micro.style.display = _lastLogId ? 'flex' : 'none';
 
       // 저장된 캡션 데이터를 슬롯에 연결
       if (typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined') {
@@ -630,56 +643,10 @@ async function generateCaption() {
         }
       }
 
-      // 액션바 렌더링 (갤러리 저장 + 다음 손님 유도)
+      // 액션바 렌더링
       _renderCaptionActionBar(finalCaption, hashes);
       btn.innerHTML = '다시 만들기 ✨';
       btn.disabled = false;
-
-      // 인라인 미리보기: 인스타그램 피드 스타일
-      const inlinePrev = document.getElementById('captionInlinePreview');
-      if (inlinePrev && typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined') {
-        const slot = _slots.find(s => s.id === _captionSlotId);
-        const photos = slot ? slot.photos.filter(p => !p.hidden) : [];
-        if (photos.length) {
-          const shopName = localStorage.getItem('shop_name') || '잇데이';
-          const previewId = 'inl_carousel';
-          inlinePrev.style.display = 'block';
-          inlinePrev.innerHTML = `
-            <div style="background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;margin:0 -4px;">
-              <!-- 상단: 프로필 + 팔로우 -->
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);padding:2px;">
-                    <div style="width:100%;height:100%;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;">
-                      <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800;">${shopName[0]}</div>
-                    </div>
-                  </div>
-                  <div style="font-size:13px;font-weight:600;color:#262626;">${shopName}</div>
-                </div>
-                <button style="padding:6px 16px;border-radius:8px;border:none;background:#0095f6;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">팔로우</button>
-              </div>
-              <!-- 중단: 사진 캐러셀 -->
-              <div style="background:#fafafa;">${typeof _buildInstaCarousel === 'function' ? _buildInstaCarousel(photos, previewId) : (typeof _buildPeekCarousel === 'function' ? _buildPeekCarousel(photos, previewId) : '')}</div>
-              <!-- 하단: 아이콘 + 캡션 -->
-              <div style="padding:0 12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 8px;">
-                  <div style="display:flex;gap:16px;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                  </div>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                </div>
-                <div style="font-size:13px;color:#262626;line-height:1.5;padding-bottom:12px;">
-                  <span style="font-weight:600;">${shopName}</span> ${finalCaption.slice(0,100)}${finalCaption.length>100?'<span style="color:#8e8e8e;">...더 보기</span>':''}
-                </div>
-              </div>
-            </div>
-          `;
-          if (typeof _initInstaCarousel === 'function') setTimeout(() => _initInstaCarousel(previewId, photos.length), 80);
-          else if (typeof _initPeekCarousel === 'function') setTimeout(() => _initPeekCarousel(previewId, photos.length), 80);
-        }
-      }
     });
     return; // btn 복원은 onClose 콜백에서 처리
   } catch(e) {
@@ -1057,9 +1024,14 @@ function goToNextSlotCaption(slotId) {
   document.getElementById('captionMemo').value = '';
   const situation = document.getElementById('captionSituation');
   if (situation) situation.value = '';
-  document.getElementById('captionResult').style.display = 'none';
+  const ta = document.getElementById('captionText');
+  if (ta) { ta.value = ''; _capAutoGrow(ta); }
   document.getElementById('captionActionBar').style.display = 'none';
-  document.getElementById('captionBtn').innerHTML = '피드 글 작성하기 ✨';
+  const micro = document.getElementById('captionEditMicro');
+  if (micro) micro.style.display = 'none';
+  _lastLogId = null;
+  _captionPhotosReordered = null;
+  _renderCaptionPhotoRow();
   // 태그 선택 해제
   document.querySelectorAll('#typeTags .tag.on').forEach(t => t.classList.remove('on'));
   // 스크롤 맨 위로
