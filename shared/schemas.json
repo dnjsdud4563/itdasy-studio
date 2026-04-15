@@ -1373,6 +1373,28 @@
             ],
             "title": "Sentence Length Std"
           },
+          "post_char_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Char Mean"
+          },
+          "post_char_std": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Char Std"
+          },
           "emoji_density": {
             "anyOf": [
               {
@@ -1476,6 +1498,8 @@
         "required": [
           "sentence_length_mean",
           "sentence_length_std",
+          "post_char_mean",
+          "post_char_std",
           "emoji_density",
           "emoji_top5",
           "vocab_top20",
@@ -1582,6 +1606,35 @@
             ],
             "title": "Category",
             "type": "string"
+          },
+          "length_tier": {
+            "default": "medium",
+            "description": "글 길이",
+            "enum": [
+              "short",
+              "medium",
+              "long"
+            ],
+            "title": "Length Tier",
+            "type": "string"
+          },
+          "tone_override": {
+            "anyOf": [
+              {
+                "enum": [
+                  "plain",
+                  "normal",
+                  "ornate"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "말투 오버라이드 (None=identity 기본값)",
+            "title": "Tone Override"
           }
         },
         "required": [
@@ -1656,6 +1709,40 @@
         ],
         "title": "GenerateResponse",
         "type": "object"
+      }
+    },
+    "PATCH /persona/generation_logs/{log_id}": {
+      "request": {
+        "description": "생성 로그 편집 요청 — 편집된 최종본 저장.",
+        "properties": {
+          "final_text": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Final Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "final_text"
+        ],
+        "title": "GenerationLogPatchRequest",
+        "type": "object"
+      }
+    },
+    "POST /persona/fingerprint/refresh": {
+      "response": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "source_post_count": {
+            "type": "integer"
+          },
+          "post_char_mean": {
+            "type": "number"
+          }
+        }
       }
     }
   },
@@ -1975,6 +2062,16 @@
     "post_source": [
       "instagram",
       "manual"
+    ],
+    "length_tier": [
+      "short",
+      "medium",
+      "long"
+    ],
+    "tone_override": [
+      "plain",
+      "normal",
+      "ornate"
     ]
   }
 }
