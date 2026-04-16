@@ -525,14 +525,6 @@ function _renderIdentityBlock() {
         style="width:100%;box-sizing:border-box;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
     </div>
 
-    <!-- Q7 taboo_phrases -->
-    <div style="margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q7. 금지 표현 <span style="font-size:10px;font-weight:400;color:var(--text3);">쉼표 구분, 최대 20개</span></div>
-      <input id="pid-taboo" type="text"
-        placeholder="예: 싸다, 할인, 저렴"
-        style="width:100%;box-sizing:border-box;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
-    </div>
-
     <!-- Q9 personality_line -->
     <div style="margin-bottom:16px;">
       <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;">Q9. 브랜드 한 마디 <span style="font-size:10px;font-weight:400;color:var(--text3);">최대 200자</span></div>
@@ -632,11 +624,6 @@ async function _loadIdentity() {
         const svEl = document.getElementById('pid-sig-vocab');
         if (svEl) svEl.value = data.signature_vocab.join(', ');
       }
-      // Q7 taboo_phrases
-      if (Array.isArray(data.taboo_phrases)) {
-        const tpEl = document.getElementById('pid-taboo');
-        if (tpEl) tpEl.value = data.taboo_phrases.join(', ');
-      }
       // Q9 personality_line
       if (data.personality_line) {
         const plEl = document.getElementById('pid-personality');
@@ -709,11 +696,6 @@ async function _saveIdentity() {
   const sigVocab = svRaw ? svRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 20) : [];
   if (JSON.stringify(sigVocab) !== JSON.stringify(loaded.signature_vocab || []))
                                                                       body.signature_vocab   = sigVocab;
-
-  const tpRaw  = (document.getElementById('pid-taboo')?.value || '').trim();
-  const taboo  = tpRaw ? tpRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 20) : [];
-  if (JSON.stringify(taboo) !== JSON.stringify(loaded.taboo_phrases || []))
-                                                                      body.taboo_phrases     = taboo;
 
   const pLine  = (document.getElementById('pid-personality')?.value || '').trim();
   if (pLine !== (loaded.personality_line || ''))                      body.personality_line  = pLine;
