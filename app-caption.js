@@ -266,74 +266,6 @@ async function saveOnboardingCaption() {
   }
 }
 
-// ===== 톤 컨트롤러 (길이 + 말투 버튼 그룹) =====
-let _toneCtrl = { length: 'normal', vibe: 'natural' };
-
-// 버튼 그룹 active 상태 동기화
-function _syncCapLenBtn(val) {
-  document.querySelectorAll('#capLenGroup .cap-len-btn').forEach(b => {
-    const on = b.dataset.v === val;
-    b.style.background = on ? 'var(--accent)' : 'transparent';
-    b.style.color = on ? '#fff' : 'var(--text3)';
-  });
-}
-function _syncCapVibeBtn(val) {
-  document.querySelectorAll('#capVibeGroup .cap-vibe-btn').forEach(b => {
-    const on = b.dataset.v === val;
-    b.style.background = on ? 'var(--accent)' : 'transparent';
-    b.style.color = on ? '#fff' : 'var(--text3)';
-  });
-}
-
-let _lengthSaveTimer = null;
-
-// tone_preference → vibe 매핑 (initToneController에서 사용)
-const _TONE_PREF_MAP = {
-  casual_friendly: 'natural',
-  polite_formal:   'natural',
-  lively_emoji:    'ornate',
-  calm_premium:    'plain',
-  mixed:           'natural',
-};
-
-function initToneController() {
-  // length: /shop/persona 에서 로드 (저장 유지)
-  // vibe:   /persona/identity 에서 tone_preference 로드 (1회성 기본값, 저장 안 함)
-  const lenP = fetch(API + '/shop/persona', { headers: authHeader() })
-    .then(r => r.ok ? r.json() : null)
-    .catch(() => null);
-  const idP = _personaFetch('GET', '/persona/identity')
-    .then(r => r.ok ? r.json() : null)
-    .catch(() => null);
-
-  Promise.all([lenP, idP]).then(([persona, identity]) => {
-    _toneCtrl.length = persona?.length_mode || 'normal';
-    const tonePref   = identity?.tone_preference;
-    _toneCtrl.vibe   = _TONE_PREF_MAP[tonePref] || 'natural';
-    _syncCapLenBtn(_toneCtrl.length);
-    _syncCapVibeBtn(_toneCtrl.vibe);
-  }).catch(() => {});
-}
-
-function setToneCtrl(type, val) {
-  if (type === 'length') {
-    _syncCapLenBtn(val);
-    _toneCtrl.length = val;
-    clearTimeout(_lengthSaveTimer);
-    _lengthSaveTimer = setTimeout(() => {
-      fetch(API + '/shop/persona', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({ length_mode: val }),
-      }).catch(() => {});
-    }, 500);
-  } else {
-    // vibe: 1회성 in-memory override — 서버에 저장하지 않음
-    _syncCapVibeBtn(val);
-    _toneCtrl.vibe = val;
-  }
-}
-
 // ===== 캡션 탭 사진 영역 (드래그 순서 변경) =====
 let _captionPhotosReordered = null; // 재정렬된 사진 배열 (null = 슬롯 기본 순서)
 
@@ -490,6 +422,21 @@ function renderCaptionKeywordTags() {
   container.innerHTML = keywords.map(k =>
     `<span class="tag" data-v="${k}" onclick="toggleCaptionTag(this)">${k}<button class="tag-delete" onclick="deleteCaptionKeyword('${k}',event)">×</button></span>`
   ).join('') + `<span class="tag tag-add" onclick="showAddKeywordInput()">+ 추가</span>`;
+
+  // scenario-selector 마운트 (탭 진입 시 최초 1회)
+  _initCaptionScenario();
+}
+
+// scenario-selector 마운트 (글쓰기 탭 진입 시)
+function _initCaptionScenario() {
+  const area = document.getElementById('captionScenarioArea');
+  if (!area || !window.renderScenarioSelector) return;
+  // 이미 마운트된 경우 재초기화하지 않음
+  if (area.dataset.mounted === '1') return;
+  area.dataset.mounted = '1';
+  window.renderScenarioSelector(area, (result) => {
+    window._captionScenarioResult = result;
+  });
 }
 
 function toggleCaptionTag(el) {
@@ -549,17 +496,9 @@ const _CAP_ERR_MSG = {
   'fingerprint_missing': '포스트가 5개 이상 필요합니다. 인스타 연동에서 포스트를 더 불러와주세요.',
 };
 
-// _toneCtrl → payload 필드 변환 헬퍼
-// length: 'short'|'normal'|'long' → length_tier: 'short'|'medium'|'long'
-// vibe:   'plain'|'natural'|'ornate' → tone_override: 'plain'|'normal'|'ornate'
-function _capLengthTier(l) { return l === 'normal' ? 'medium' : l; }
-function _capToneOverride(v) { return v === 'natural' ? 'normal' : v; }
-
 async function generateCaption() {
   const types = getSel('typeTags');
 
-  const memo = document.getElementById('captionMemo').value;
-  const situation = document.getElementById('captionSituation')?.value || '';
   const btn = document.getElementById('captionBtn');
   btn.disabled = true;
 
@@ -573,13 +512,19 @@ async function generateCaption() {
   const slotNote = (typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined')
     ? (() => { const s = _slots.find(sl => sl.id === _captionSlotId); return s ? `손님: ${s.label}. 사진 ${s.photos.filter(p=>!p.hidden).length}장. ` : ''; })()
     : '';
-  const situationNote = situation ? `손님상황: ${situation}. ` : '';
 
-  // payload 구성 — 토글 상태를 API 필드에 직접 매핑
+  // scenario-selector 결과 사용
+  const scenario    = window._captionScenarioResult || {};
+  const axesText    = scenario.axes
+    ? `${scenario.axes.customer} 손님. ${scenario.axes.situation}. ${scenario.axes.photo}.`
+    : '';
+  const specialText = scenario.special_context || '';
+
+  // payload 구성
   const category      = _CAP_CAT_MAP[shopType] || 'extension';
-  const photo_context = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. ${slotNote}${situationNote}${memo || ''}`.trim();
-  const length_tier   = _capLengthTier(_toneCtrl.length);    // short|medium|long
-  const tone_override = _capToneOverride(_toneCtrl.vibe);    // plain|normal|ornate
+  const photo_context = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. ${slotNote}${axesText} ${specialText}`.trim();
+  const length_tier   = 'medium';
+  const tone_override = 'normal';
 
   const payload = { category, photo_context, length_tier, tone_override };
 
@@ -595,7 +540,7 @@ async function generateCaption() {
       const msg = _CAP_ERR_MSG[code] || '캡션 생성에 실패했습니다. 다시 시도해주세요.';
       hideCaptionLoader(false, () => {
         showToast(msg);
-        btn.innerHTML = '다시 만들기 ✨';
+        btn.innerHTML = '만들기 ✨';
         btn.disabled = false;
       });
       return;
@@ -645,7 +590,7 @@ async function generateCaption() {
 
       // 액션바 렌더링
       _renderCaptionActionBar(finalCaption, hashes);
-      btn.innerHTML = '다시 만들기 ✨';
+      btn.innerHTML = '만들기 ✨';
       btn.disabled = false;
     });
     return; // btn 복원은 onClose 콜백에서 처리
@@ -653,7 +598,7 @@ async function generateCaption() {
     if (e.message === '401') return; // _personaFetch가 401 처리
     hideCaptionLoader(false, () => {
       showToast('일시적 오류. 다시 시도해주세요.');
-      btn.innerHTML = '다시 만들기 ✨';
+      btn.innerHTML = '만들기 ✨';
       btn.disabled = false;
     });
   }
@@ -1020,10 +965,13 @@ function goToNextSlotCaption(slotId) {
   if (typeof loadSlotForCaption === 'function') {
     loadSlotForCaption(slotId);
   }
-  // 입력 필드 초기화
-  document.getElementById('captionMemo').value = '';
-  const situation = document.getElementById('captionSituation');
-  if (situation) situation.value = '';
+  // scenario 선택 초기화 (다음 손님은 다시 고르도록)
+  window._captionScenarioResult = null;
+  const area = document.getElementById('captionScenarioArea');
+  if (area) {
+    area.dataset.mounted = '';
+    _initCaptionScenario();
+  }
   const ta = document.getElementById('captionText');
   if (ta) { ta.value = ''; _capAutoGrow(ta); }
   document.getElementById('captionActionBar').style.display = 'none';

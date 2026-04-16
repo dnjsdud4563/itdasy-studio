@@ -194,4 +194,5 @@ function renderScenarioSelector(container, onComplete) {
   render();
 }
 
+window.renderScenarioSelector = renderScenarioSelector;
 export { renderScenarioSelector };
