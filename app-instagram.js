@@ -55,6 +55,14 @@ function showDetailedAnalysis() {
   // 팝업 데이터 렌더링 (runPersonaAnalyze에 있는 로직 재사용)
   renderDetailedPopup({ raw_analysis: raw, persona: { avg_caption_length: raw.avg_caption_length || 0, emojis: raw.emojis, hashtags: raw.hashtags, style_summary: raw.style_summary } });
   document.getElementById('analyzeResultPopup').style.display = 'block';
+  const closeBtn2 = document.querySelector('#analyzeResultPopup button');
+  if (closeBtn2) {
+    closeBtn2.addEventListener('click', () => {
+      if (typeof window.openPersonaPopup === 'function') {
+        setTimeout(() => window.openPersonaPopup(), 300);
+      }
+    }, { once: true });
+  }
 }
 
 function renderDetailedPopup(data) {
@@ -188,7 +196,7 @@ async function runPersonaAnalyze() {
       const closeBtn = document.querySelector('#analyzeResultPopup button');
       if (closeBtn) {
         closeBtn.addEventListener('click', () => {
-          if (window.openPersonaPopup) {
+          if (typeof window.openPersonaPopup === 'function') {
             setTimeout(() => window.openPersonaPopup(), 300);
           }
         }, { once: true });
