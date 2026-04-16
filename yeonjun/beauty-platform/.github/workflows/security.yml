@@ -1,0 +1,51 @@
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  xss-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Forbid dangerous React patterns
+        run: |
+          if grep -rnE "dangerouslySetInnerHTML|\beval\s*\(" packages/ server/ --include='*.ts' --include='*.tsx'; then
+            echo "::error::Dangerous pattern detected"
+            exit 1
+          fi
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm --prefix server ci --ignore-scripts || npm --prefix server i --ignore-scripts
+      - name: Audit server dependencies
+        run: cd server && npm audit --audit-level=high --omit=dev || true
+      - run: npm --prefix packages/platform-sdk i --ignore-scripts
+      - name: Audit SDK dependencies
+        run: cd packages/platform-sdk && npm audit --audit-level=high --omit=dev || true
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm --prefix server ci --ignore-scripts || npm --prefix server i --ignore-scripts
+      - run: npm --prefix server run typecheck
+      - run: npm --prefix packages/platform-sdk i --ignore-scripts
+      - run: npm --prefix packages/platform-sdk run typecheck

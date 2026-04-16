@@ -1,0 +1,22 @@
+{
+  "name": "@beauty/platform-sdk",
+  "version": "0.1.0",
+  "description": "React Native SDK for Beauty Platform — 원영님 앱 연동용",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react-native": ">=0.73",
+    "@supabase/supabase-js": "^2.45.0",
+    "expo-secure-store": "*",
+    "react-native-purchases": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
+}

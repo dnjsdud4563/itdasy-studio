@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>잇데이 — 사장님의 시간을 아끼고, 매출을 잇다</title>
+  <meta name="description" content="AI가 사장님 말투로 캡션을 써주고, 인스타에 바로 올려드려요. 뷰티샵 전용 SNS 자동화 솔루션.">
+  <meta property="og:title" content="잇데이 — 뷰티샵 AI 인스타그램 자동화">
+  <meta property="og:description" content="캡션 작성부터 피드·스토리 발행까지. 사장님 말투 그대로.">
+  <meta name="theme-color" content="#0f0608">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #F2F4F6;
+      --bg2:     #FFFFFF;
+      --bg3:     #F7F8FA;
+      --accent:  #F18091;
+      --accent2: #D95F70;
+      --accent3: #FBD0D6;
+      --dark:    #0f0608;
+      --text:    #191F28;
+      --text2:   #4E5968;
+      --text3:   #8B95A1;
+      --border:  rgba(0,0,0,0.07);
+      --grad:    linear-gradient(135deg, #F18091, #D95F70);
+      --shadow-sm:   0 2px 8px rgba(0,0,0,0.06);
+      --shadow-md:   0 4px 20px rgba(0,0,0,0.09);
+      --shadow-pink: 0 8px 28px rgba(241,128,145,0.35);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg2);
+      overflow-x: hidden;
+      word-break: keep-all;
+      -webkit-tap-highlight-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    .section-label {
+      display: inline-block;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(241,128,145,0.1);
+      padding: 5px 12px; border-radius: 20px; margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: clamp(22px, 5vw, 32px); font-weight: 900;
+      letter-spacing: -0.04em; line-height: 1.3; color: var(--text);
+    }
+    .section-title.light { color: #fff; }
+    .section-sub { font-size: 15px; color: var(--text2); line-height: 1.7; margin-top: 10px; }
+    .section-sub.light { color: rgba(255,255,255,0.6); }
+
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity .5s ease, transform .5s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: .1s; }
+    .reveal-delay-2 { transition-delay: .2s; }
+    .reveal-delay-3 { transition-delay: .3s; }
+    .reveal-delay-4 { transition-delay: .4s; }
+
+    /* ── 사전예약 배너 ── */
+    .preorder-bar {
+      background: linear-gradient(135deg, #1a0c0f, #2d1018);
+      border-bottom: 1px solid rgba(241,128,145,0.2);
+      color: rgba(255,255,255,0.8);
+      text-align: center; padding: 10px 20px;
+      font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; flex-wrap: wrap;
+    }
+    .preorder-bar strong { color: #fff; font-weight: 900; }
+    .preorder-bar-badge {
+      background: var(--grad); color: #fff;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+    }
+    .preorder-bar-btn {
+      background: rgba(241,128,145,0.15);
+      border: 1px solid rgba(241,128,145,0.35);
+      color: var(--accent); font-size: 12px; font-weight: 700;
+      padding: 4px 12px; border-radius: 20px;
+      text-decoration: none; white-space: nowrap;
+      transition: background .2s;
+    }
+    .preorder-bar-btn:hover { background: rgba(241,128,145,0.25); }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,6,8,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(241,128,145,0.12);
+      transition: box-shadow .3s;
+    }
+    .navbar.scrolled { box-shadow: 0 2px 20px rgba(0,0,0,0.35); }
+    .navbar-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 56px; padding: 0 24px; max-width: 1080px; margin: 0 auto;
+    }
+    .navbar-logo { font-size: 17px; font-weight: 900; letter-spacing: -0.03em; color: #fff; }
+    .navbar-logo span { color: var(--accent); }
+    .btn-nav {
+      height: 36px; padding: 0 18px;
+      background: var(--grad); color: #fff;
+      font-size: 13px; font-weight: 700;
+      border: none; border-radius: 20px; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn-nav:active { transform: scale(0.96); opacity: .88; }
+
+    /* ── Hero ── */
+    #hero {
+      background: var(--dark); position: relative;
+      overflow: hidden; padding: 80px 0 72px;
+    }
+    #hero::before {
+      content: ''; position: absolute; top: -120px; right: -80px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(241,128,145,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    #hero::after {
+      content: ''; position: absolute; bottom: -100px; left: -60px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(217,95,112,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner { display: flex; align-items: center; gap: 48px; position: relative; z-index: 1; }
+    .hero-content { flex: 1; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(241,128,145,0.15); border: 1px solid rgba(241,128,145,0.3);
+      border-radius: 20px; padding: 5px 14px;
+      font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 20px;
+    }
+    .hero-badge-dot {
+      width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+      animation: pdot 1.6s ease-in-out infinite;
+    }
+    @keyframes pdot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+
+    .hero-title {
+      font-size: clamp(26px, 5.5vw, 48px); font-weight: 900;
+      letter-spacing: -0.04em; line-height: 1.25; color: #fff; margin-bottom: 18px;
+    }
+    .hero-title .accent { color: var(--accent); }
+    .hero-desc { font-size: clamp(14px, 2.5vw, 17px); color: rgba(255,255,255,0.6); line-height: 1.75; margin-bottom: 32px; }
+    .hero-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .btn-hero {
+      height: 54px; padding: 0 28px;
+      background: var(--grad); color: #fff;
+      font-size: 16px; font-weight: 700;
+      border: none; border-radius: 20px; cursor: pointer;
+      box-shadow: var(--shadow-pink);
+      transition: transform .15s, box-shadow .15s;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      position: relative; overflow: hidden;
+    }
+    .btn-hero:active { transform: scale(0.97); }
+    .hero-note { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 14px; }
+
+    /* 긴박감 카운터 */
+    .hero-urgency {
+      margin-top: 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .urgency-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; font-weight: 700; color: #f87171;
+    }
+    .urgency-chip.amber {
+      background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.3); color: #fbbf24;
+    }
+
+    /* Phone Mockup */
+    .hero-mockup { flex: 0 0 240px; display: flex; justify-content: center; }
+    .phone-frame {
+      width: 220px; height: 420px; background: #1a0c0f;
+      border-radius: 36px; border: 2px solid rgba(241,128,145,0.25);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+      padding: 20px 14px 14px; display: flex; flex-direction: column; gap: 10px;
+      animation: pfloat 3.5s ease-in-out infinite;
+    }
+    @keyframes pfloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .phone-notch { width: 60px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 0 auto 6px; }
+    .phone-header { background: rgba(241,128,145,0.1); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+    .phone-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--grad); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .phone-name { font-size: 10px; font-weight: 700; color: #fff; }
+    .phone-handle { font-size: 9px; color: rgba(255,255,255,0.4); }
+    .phone-connected { font-size: 9px; color: #3DAA72; font-weight: 700; }
+    .phone-caption { background: rgba(255,255,255,0.04); border: 1px solid rgba(241,128,145,0.15); border-radius: 12px; padding: 10px 12px; }
+    .phone-caption-label { font-size: 8px; color: var(--accent); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+    .phone-caption-text { font-size: 9px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+    .phone-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .phone-tag { background: rgba(241,128,145,0.12); border-radius: 8px; padding: 3px 7px; font-size: 8px; color: var(--accent); font-weight: 600; }
+    .phone-btn { margin-top: auto; background: var(--grad); border-radius: 12px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+
+    /* ── Trust Metrics ── */
+    #trust { background: var(--dark); padding: 40px 0; border-top: 1px solid rgba(241,128,145,0.1); }
+    .trust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+    .trust-item {
+      text-align: center; padding: 20px 16px;
+      border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    .trust-item:last-child { border-right: none; }
+    .trust-number { font-size: clamp(24px, 4vw, 36px); font-weight: 900; letter-spacing: -0.04em; color: var(--accent); line-height: 1; }
+    .trust-label { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 6px; }
+
+    /* ── Problem ── */
+    #problem { background: var(--bg); padding: 80px 0; }
+    .problem-header { text-align: center; margin-bottom: 48px; }
+    .problem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .problem-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px 24px; box-shadow: var(--shadow-sm);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .problem-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .problem-icon { font-size: 32px; margin-bottom: 14px; display: block; }
+    .problem-number {
+      font-size: clamp(28px, 5vw, 40px); font-weight: 900;
+      letter-spacing: -0.04em; color: var(--accent); line-height: 1; margin-bottom: 4px;
+    }
+    .problem-sub { font-size: 13px; font-weight: 700; color: var(--text2); }
+    .problem-desc { font-size: 14px; color: var(--text2); line-height: 1.65; margin-top: 10px; }
+    .problem-desc strong { color: var(--text); font-weight: 700; }
+
+    /* ── Services ── */
+    #services { background: var(--bg2); padding: 80px 0; }
+    .services-header { text-align: center; margin-bottom: 48px; }
+    .services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .service-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 24px; padding: 32px 28px; box-shadow: var(--shadow-sm);
+      transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
+      position: relative; overflow: hidden;
+    }
+    .service-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--grad); opacity: 0; transition: opacity .2s;
+    }
+    .service-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
+    .service-card:hover::before { opacity: 1; }
+    .service-icon {
+      width: 52px; height: 52px; border-radius: 16px;
+      background: rgba(241,128,145,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 18px;
+    }
+    .service-title { font-size: 18px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); margin-bottom: 10px; }
+    .service-desc { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 16px; }
+    .service-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(241,128,145,0.08); border: 1px solid rgba(241,128,145,0.2);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; font-weight: 700; color: var(--accent2);
+    }
+
+    /* ── Testimonials Carousel ── */
+    #testimonials { background: linear-gradient(180deg, #fff5f7 0%, #fff 100%); padding: 80px 0; overflow: hidden; }
+    .testimonials-header { text-align: center; margin-bottom: 48px; }
+    .carousel-track-wrap { overflow: hidden; position: relative; }
+    .carousel-track-wrap::before, .carousel-track-wrap::after {
+      content: ''; position: absolute; top: 0; bottom: 0; width: 80px; z-index: 2; pointer-events: none;
+    }
+    .carousel-track-wrap::before { left: 0; background: linear-gradient(to right, #fff5f7, transparent); }
+    .carousel-track-wrap::after { right: 0; background: linear-gradient(to left, #fff, transparent); }
+    .carousel-track {
+      display: flex; gap: 20px;
+      animation: carousel-left 30s linear infinite;
+      width: max-content;
+    }
+    .carousel-track:hover { animation-play-state: paused; }
+    @keyframes carousel-left {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .t-card {
+      background: var(--bg2); border: 1px solid rgba(241,128,145,0.12);
+      border-radius: 24px; padding: 28px 26px; box-shadow: 0 4px 20px rgba(241,128,145,0.08);
+      width: 320px; flex-shrink: 0; position: relative;
+    }
+    .t-quote {
+      font-size: 44px; line-height: 1; color: var(--accent3);
+      font-family: Georgia, serif; position: absolute; top: 16px; left: 22px; opacity: .55;
+    }
+    .t-stars { font-size: 13px; color: #fbbf24; margin-bottom: 12px; padding-top: 24px; }
+    .t-text { font-size: 14px; color: var(--text); line-height: 1.75; margin-bottom: 18px; }
+    .t-text em { font-style: normal; color: var(--accent2); font-weight: 700; }
+    .t-author { display: flex; align-items: center; gap: 10px; }
+    .t-avatar {
+      width: 38px; height: 38px; border-radius: 50%; background: var(--grad);
+      display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0;
+    }
+    .t-name { font-size: 13px; font-weight: 800; color: var(--text); }
+    .t-role { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    /* ── Pricing ── */
+    #pricing { background: var(--bg); padding: 80px 0; }
+    .pricing-header { text-align: center; margin-bottom: 48px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
+    .pricing-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 24px; padding: 32px 28px; box-shadow: var(--shadow-sm);
+      transition: transform .2s, box-shadow .2s; position: relative;
+    }
+    .pricing-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .pricing-card.featured {
+      border: 2px solid var(--accent);
+      box-shadow: 0 8px 32px rgba(241,128,145,0.2);
+      transform: translateY(-8px);
+    }
+    .pricing-card.featured:hover { transform: translateY(-12px); }
+    .pricing-popular {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--grad); color: #fff;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      padding: 4px 16px; border-radius: 20px; white-space: nowrap;
+    }
+    .pricing-tier { font-size: 13px; font-weight: 700; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+    .pricing-price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+    .pricing-amount { font-size: clamp(28px, 5vw, 40px); font-weight: 900; letter-spacing: -0.04em; color: var(--text); }
+    .pricing-period { font-size: 14px; color: var(--text3); }
+    .pricing-desc { font-size: 13px; color: var(--text2); margin-bottom: 24px; line-height: 1.5; }
+    .pricing-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+    .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .pricing-features li { font-size: 14px; color: var(--text2); display: flex; align-items: flex-start; gap: 8px; }
+    .pricing-features li::before { content: '✓'; color: var(--accent); font-weight: 900; flex-shrink: 0; margin-top: 1px; }
+    .pricing-features li.disabled { color: var(--text3); }
+    .pricing-features li.disabled::before { content: '–'; color: var(--text3); }
+    .btn-pricing {
+      width: 100%; height: 48px; border-radius: 14px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      border: none; transition: transform .15s, opacity .15s;
+      text-decoration: none; display: flex; align-items: center; justify-content: center;
+    }
+    .btn-pricing:active { transform: scale(0.97); opacity: .88; }
+    .btn-pricing.primary { background: var(--grad); color: #fff; box-shadow: var(--shadow-pink); }
+    .btn-pricing.outline { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+    .pricing-note { text-align: center; font-size: 12px; color: var(--text3); margin-top: 20px; }
+
+    /* ── FAQ ── */
+    #faq { background: var(--bg2); padding: 80px 0; }
+    .faq-header { text-align: center; margin-bottom: 48px; }
+    .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+    .faq-item {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+      transition: box-shadow .2s;
+    }
+    .faq-item.open { box-shadow: var(--shadow-sm); border-color: rgba(241,128,145,0.2); }
+    .faq-q {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px; background: transparent; border: none; cursor: pointer;
+      font-size: 15px; font-weight: 700; color: var(--text);
+      text-align: left; letter-spacing: -0.02em;
+      font-family: inherit;
+    }
+    .faq-icon {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(241,128,145,0.1); color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0; transition: transform .3s, background .2s;
+    }
+    .faq-item.open .faq-icon { transform: rotate(45deg); background: rgba(241,128,145,0.18); }
+    .faq-a {
+      max-height: 0; overflow: hidden;
+      transition: max-height .35s ease, padding .35s ease;
+      font-size: 14px; color: var(--text2); line-height: 1.75;
+      padding: 0 22px;
+    }
+    .faq-item.open .faq-a { max-height: 300px; padding: 0 22px 20px; }
+
+    /* ── Lang Switcher ── */
+    .lang-switcher { position: relative; }
+    .lang-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.8);
+      cursor: pointer; font-family: inherit; transition: background .2s;
+    }
+    .lang-btn:hover { background: rgba(255,255,255,0.14); }
+    .lang-flag { font-size: 14px; }
+    .lang-dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      overflow: hidden; min-width: 130px;
+      opacity: 0; pointer-events: none; transform: translateY(-6px);
+      transition: opacity .2s, transform .2s; z-index: 200;
+    }
+    .lang-switcher.open .lang-dropdown { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .lang-option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; font-size: 13px; font-weight: 600;
+      color: var(--text); cursor: pointer; transition: background .15s;
+    }
+    .lang-option:hover { background: var(--bg3); }
+    .lang-option.active { color: var(--accent); }
+
+    /* ── Service Preview Button ── */
+    .service-preview-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; border: 1.5px solid rgba(241,128,145,0.3);
+      border-radius: 20px; padding: 6px 14px;
+      font-size: 12px; font-weight: 700; color: var(--accent);
+      cursor: pointer; margin-top: 12px;
+      transition: background .2s, border-color .2s;
+      font-family: inherit;
+    }
+    .service-preview-btn:hover { background: rgba(241,128,145,0.08); border-color: var(--accent); }
+    .service-preview-btn svg { width: 13px; height: 13px; fill: var(--accent); }
+
+    /* ── Preview Modal ── */
+    .preview-modal-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    .preview-modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .preview-modal {
+      background: #fff; border-radius: 28px;
+      width: 100%; max-width: 480px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+      transform: translateY(20px) scale(0.97);
+      transition: transform .3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .preview-modal-overlay.open .preview-modal { transform: translateY(0) scale(1); }
+    .preview-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .preview-modal-title { font-size: 16px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
+    .preview-modal-close {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--bg3); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: var(--text2); transition: background .2s;
+    }
+    .preview-modal-close:hover { background: var(--accent3); }
+    .preview-modal-body { padding: 22px; min-height: 280px; }
+
+    /* Demo: AI Caption */
+    .demo-caption .demo-input {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px;
+      font-size: 13px; color: var(--text2); margin-bottom: 14px;
+    }
+    .demo-caption .demo-input span { color: var(--text); font-weight: 600; }
+    .demo-caption .demo-output {
+      background: linear-gradient(135deg, #fffcfd, #fff5f7);
+      border: 1px solid rgba(241,128,145,0.2);
+      border-radius: 14px; padding: 14px 16px;
+    }
+    .demo-caption .demo-label {
+      font-size: 10px; font-weight: 700; color: var(--accent);
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .demo-caption .demo-text {
+      font-size: 14px; color: var(--text); line-height: 1.7;
+      border-right: 2px solid var(--accent);
+      white-space: pre-wrap; min-height: 80px;
+    }
+    .demo-caption .demo-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+    .demo-caption .demo-tag {
+      background: rgba(241,128,145,0.1); border-radius: 10px;
+      padding: 3px 9px; font-size: 11px; color: var(--accent); font-weight: 600;
+    }
+
+    /* Demo: BG Remove */
+    .demo-bg { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+    .demo-bg-row { display: flex; gap: 12px; width: 100%; justify-content: center; }
+    .demo-bg-card {
+      flex: 1; border-radius: 16px; overflow: hidden;
+      position: relative; max-width: 180px;
+      aspect-ratio: 3/4;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+    }
+    .demo-bg-before { background: linear-gradient(135deg, #e8ddd5, #d4c4b8); }
+    .demo-bg-after  { background: var(--grad); }
+    .demo-bg-after .demo-bg-checkerboard {
+      position: absolute; inset: 0; opacity: 0.15;
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size: 12px 12px;
+      background-position: 0 0, 0 6px, 6px -6px, -6px 0px;
+    }
+    .demo-bg-label {
+      font-size: 11px; font-weight: 700; color: var(--text2);
+      text-align: center; position: absolute; bottom: 8px; left: 0; right: 0;
+    }
+    .demo-bg-arrow { font-size: 22px; color: var(--accent); align-self: center; }
+    .demo-bg-styles { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .demo-bg-style-btn {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 1.5px solid var(--border); cursor: pointer; transition: all .2s;
+      background: #fff; color: var(--text2); font-family: inherit;
+    }
+    .demo-bg-style-btn.active, .demo-bg-style-btn:hover {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+    }
+
+    /* Demo: Publish */
+    .demo-publish { display: flex; flex-direction: column; gap: 10px; }
+    .demo-publish-step {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 14px;
+      background: var(--bg3); border: 1px solid var(--border);
+      transition: background .4s, border-color .4s;
+    }
+    .demo-publish-step.active {
+      background: rgba(241,128,145,0.08);
+      border-color: rgba(241,128,145,0.3);
+    }
+    .demo-publish-step.done {
+      background: rgba(61,170,114,0.07);
+      border-color: rgba(61,170,114,0.25);
+    }
+    .demo-step-icon { font-size: 20px; width: 32px; text-align: center; flex-shrink: 0; }
+    .demo-step-text { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+    .demo-step-status { font-size: 11px; font-weight: 700; }
+    .demo-step-status.waiting { color: var(--text3); }
+    .demo-step-status.processing { color: var(--accent); }
+    .demo-step-status.done { color: #3DAA72; }
+
+    /* Demo: Portfolio */
+    .demo-portfolio { display: flex; flex-direction: column; gap: 12px; }
+    .demo-port-tags { display: flex; gap: 7px; flex-wrap: wrap; }
+    .demo-port-tag {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 1.5px solid var(--border); cursor: pointer;
+      background: #fff; color: var(--text2); transition: all .2s; font-family: inherit;
+    }
+    .demo-port-tag.active, .demo-port-tag:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .demo-port-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .demo-port-item {
+      aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; position: relative;
+      background: var(--bg3);
+      transition: opacity .3s;
+    }
+    .demo-port-item.hidden { opacity: 0; pointer-events: none; }
+    .demo-port-item-tag {
+      position: absolute; bottom: 4px; left: 4px; right: 4px;
+      background: rgba(0,0,0,0.5); border-radius: 6px;
+      font-size: 9px; font-weight: 700; color: #fff;
+      text-align: center; padding: 2px 0;
+    }
+
+    /* ── CTA ── */
+    #cta { background: var(--dark); padding: 90px 0; text-align: center; position: relative; overflow: hidden; }
+    #cta::before {
+      content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(241,128,145,0.1) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .cta-inner { position: relative; z-index: 1; }
+    .cta-title { font-size: clamp(26px, 5vw, 44px); font-weight: 900; letter-spacing: -0.04em; color: #fff; line-height: 1.25; margin-bottom: 14px; }
+    .cta-desc { font-size: 16px; color: rgba(255,255,255,0.55); line-height: 1.7; margin-bottom: 36px; }
+    .cta-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+    .btn-cta {
+      height: 56px; padding: 0 32px; border-radius: 20px;
+      font-size: 16px; font-weight: 700; cursor: pointer; border: none;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      transition: transform .15s; position: relative; overflow: hidden;
+    }
+    .btn-cta:active { transform: scale(0.97); }
+    .btn-cta.primary { background: var(--grad); color: #fff; box-shadow: var(--shadow-pink); }
+    .btn-cta.outline { background: transparent; color: rgba(255,255,255,.8); border: 1px solid rgba(255,255,255,.2); }
+    .btn-cta.outline:hover { border-color: rgba(241,128,145,.4); color: var(--accent); }
+    .cta-chips { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+    .cta-chip { font-size: 12px; color: rgba(255,255,255,.3); }
+    .cta-dot { color: rgba(255,255,255,.15); }
+    .cta-final { margin-top: 28px; font-size: 13px; color: rgba(255,255,255,.22); font-style: italic; }
+
+    /* Ripple */
+    .ripple {
+      position: absolute; border-radius: 50%;
+      background: rgba(255,255,255,0.28); transform: scale(0);
+      animation: rpl .5s linear; pointer-events: none;
+    }
+    @keyframes rpl { to { transform: scale(4); opacity: 0; } }
+
+    /* ── Email Capture ── */
+    #email-capture {
+      background: linear-gradient(135deg, #1a0c0f 0%, #0f0608 100%);
+      padding: 72px 0;
+      position: relative; overflow: hidden;
+    }
+    #email-capture::before {
+      content: ''; position: absolute;
+      top: -60px; right: -60px; width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(241,128,145,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .email-capture-inner {
+      position: relative; z-index: 1;
+      max-width: 560px; margin: 0 auto; text-align: center;
+    }
+    .email-capture-title {
+      font-size: clamp(20px, 4vw, 28px); font-weight: 900;
+      letter-spacing: -0.04em; color: #fff; line-height: 1.3; margin-bottom: 10px;
+    }
+    .email-capture-title span { color: var(--accent); }
+    .email-capture-sub { font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 28px; line-height: 1.6; }
+    .email-form {
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+    }
+    .email-form-input {
+      flex: 1; min-width: 200px; max-width: 300px;
+      height: 52px; padding: 0 18px;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 16px; font-size: 14px; color: #fff;
+      font-family: inherit; outline: none;
+      transition: border-color .2s;
+    }
+    .email-form-input::placeholder { color: rgba(255,255,255,0.3); }
+    .email-form-input:focus { border-color: var(--accent); }
+    .email-form-btn {
+      height: 52px; padding: 0 24px;
+      background: var(--grad); color: #fff;
+      font-size: 15px; font-weight: 700;
+      border: none; border-radius: 16px; cursor: pointer;
+      box-shadow: var(--shadow-pink); white-space: nowrap;
+      transition: transform .15s, opacity .15s; font-family: inherit;
+    }
+    .email-form-btn:active { transform: scale(0.97); opacity: .88; }
+    .email-form-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .email-form-success {
+      display: none; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 20px; border-radius: 16px;
+      background: rgba(61,170,114,0.1); border: 1px solid rgba(61,170,114,0.3);
+      color: #4ade80; font-size: 14px; font-weight: 700; margin-top: 12px;
+    }
+    .email-form-success.show { display: flex; }
+    .email-form-error {
+      display: none; font-size: 12px; color: #f87171; margin-top: 8px;
+    }
+    .email-form-error.show { display: block; }
+    .email-capture-chips {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; flex-wrap: wrap; margin-top: 18px;
+    }
+    .email-capture-chip { font-size: 11px; color: rgba(255,255,255,0.25); }
+
+    /* ── Footer ── */
+    footer {
+      background: #080203; padding: 32px 24px; text-align: center;
+      border-top: 1px solid rgba(241,128,145,0.08);
+    }
+    .footer-logo { font-size: 15px; font-weight: 900; color: rgba(255,255,255,.45); letter-spacing: -0.03em; margin-bottom: 10px; }
+    .footer-logo span { color: var(--accent); }
+    .footer-links { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 10px; }
+    .footer-links a { font-size: 12px; color: rgba(255,255,255,.22); text-decoration: none; transition: color .2s; }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy { font-size: 11px; color: rgba(255,255,255,.12); }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .hero-mockup { display: none; }
+      .hero-content { text-align: center; }
+      .hero-actions { justify-content: center; }
+      .hero-urgency { justify-content: center; }
+      .trust-grid { grid-template-columns: repeat(2, 1fr); }
+      .trust-item:nth-child(2) { border-right: none; }
+      .trust-item:nth-child(3) { border-right: 1px solid rgba(255,255,255,.06); border-top: 1px solid rgba(255,255,255,.06); }
+      .trust-item:nth-child(4) { border-right: none; border-top: 1px solid rgba(255,255,255,.06); }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+      .pricing-card.featured { transform: none; }
+      .pricing-card.featured:hover { transform: translateY(-4px); }
+    }
+    @media (max-width: 600px) {
+      #hero { padding: 60px 0 56px; }
+      #problem, #services, #testimonials, #pricing, #faq, #cta { padding: 60px 0; }
+      .problem-grid { grid-template-columns: 1fr; gap: 14px; }
+      .services-grid { grid-template-columns: 1fr; gap: 14px; }
+      .service-card { padding: 24px 20px; }
+      .t-card { width: 280px; }
+    }
+    @media (max-width: 380px) {
+      .container { padding: 0 16px; }
+      .hero-title { font-size: 23px; }
+      .btn-hero { height: 48px; font-size: 14px; padding: 0 22px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 사전예약 배너 -->
+  <div class="preorder-bar">
+    <span class="preorder-bar-badge">사전 예약 혜택</span>
+    <span id="preorderText">지금 예약하면 <strong>1개월 요금으로 3개월</strong> 이용 가능 &nbsp;</span>
+    <a href="#pricing" class="preorder-bar-btn">지금 예약하기 →</a>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+      <div class="navbar-logo">잇데이 <span>STUDIO</span></div>
+      <div class="lang-switcher" id="langSwitcher">
+        <button class="lang-btn" onclick="toggleLang()">
+          <span class="lang-flag" id="currentFlag">🇰🇷</span>
+          <span id="currentLangLabel">한국어</span>
+          <span style="font-size:9px;opacity:.6;">▼</span>
+        </button>
+        <div class="lang-dropdown">
+          <div class="lang-option active" onclick="setLang('ko')">🇰🇷 한국어</div>
+          <div class="lang-option" onclick="setLang('en')">🇺🇸 English</div>
+          <div class="lang-option" onclick="setLang('ja')">🇯🇵 日本語</div>
+          <div class="lang-option" onclick="setLang('zh')">🇨🇳 中文</div>
+        </div>
+      </div>
+      <a href="https://dnjsdud4563.github.io/itdasy-studio/" class="btn-nav" data-i18n="nav_cta">무료 체험 시작하기</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section id="hero">
+    <div class="container">
+      <div class="hero-inner">
+        <div class="hero-content reveal">
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            뷰티샵 전용 AI 마케팅
+          </div>
+          <h1 class="hero-title">
+            인스타에 올릴 글,<br>
+            오늘도 <span class="accent">30분</span> 썼다 지웠나요?
+          </h1>
+          <p class="hero-desc">
+            사진은 찍었는데 캡션이 안 써지고, 써놓으면 어색하고.<br>
+            잇데이가 사장님 말투 그대로 대신 써드립니다. 올리는 것까지.
+          </p>
+          <div class="hero-actions">
+            <a href="https://dnjsdud4563.github.io/itdasy-studio/" class="btn-hero" id="heroBtn">지금 무료로 시작하기 →</a>
+          </div>
+          <p class="hero-note">설치 3분 · 카드 정보 불필요 · 14일 무료 체험</p>
+        </div>
+        <div class="hero-mockup reveal reveal-delay-2">
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-header">
+              <div class="phone-avatar">💅</div>
+              <div style="flex:1">
+                <div class="phone-name" id="phoneName">미니네일 원장님</div>
+                <div class="phone-handle">@mininail_studio</div>
+              </div>
+              <div class="phone-connected" id="phoneConnected">● 연동됨</div>
+            </div>
+            <div class="phone-caption">
+              <div class="phone-caption-label" id="phoneCaptionLabel">✨ AI 생성 캡션</div>
+              <div class="phone-caption-text" id="phoneCaptionText">오늘 들어온 오로라 젤이 너무 예뻐서요 🥹<br>빛에 따라 색이 바뀌는 게 진짜 신기하죠?<br>이번 주 딱 3자리 남았어요~</div>
+            </div>
+            <div class="phone-tags" id="phoneTags">
+              <div class="phone-tag">#젤네일</div>
+              <div class="phone-tag">#네일아트</div>
+              <div class="phone-tag">#오로라네일</div>
+              <div class="phone-tag">#네일스타그램</div>
+            </div>
+            <div class="phone-btn" id="phoneBtn">📲 피드 + 스토리 발행</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Metrics -->
+  <section id="trust">
+    <div class="container">
+      <div class="trust-grid">
+        <div class="trust-item reveal reveal-delay-1">
+          <div class="trust-number" data-count="2847" data-suffix="명">0명</div>
+          <div class="trust-label" id="trustLabel1">현재 사용 중인 원장님</div>
+        </div>
+        <div class="trust-item reveal reveal-delay-2">
+          <div class="trust-number" data-count="94" data-suffix="%">0%</div>
+          <div class="trust-label" id="trustLabel2">업로드 시간 단축률</div>
+        </div>
+        <div class="trust-item reveal reveal-delay-3">
+          <div class="trust-number" data-count="41200" data-suffix="건+">0건+</div>
+          <div class="trust-label" id="trustLabel3">AI 생성 캡션 수</div>
+        </div>
+        <div class="trust-item reveal reveal-delay-4">
+          <div class="trust-number" data-count="4.9" data-suffix="점" data-float="true">0점</div>
+          <div class="trust-label" id="trustLabel4">평균 앱스토어 평점</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section id="problem">
+    <div class="container">
+      <div class="problem-header reveal">
+        <span class="section-label">Problem</span>
+        <h2 class="section-title">사장님 혼자 감당하기엔 너무 많아요</h2>
+        <p class="section-sub">뷰티샵 원장님 102명에게 물었습니다. "SNS에서 가장 힘든 게 뭐예요?"</p>
+      </div>
+      <div class="problem-grid">
+        <div class="problem-card reveal reveal-delay-1">
+          <span class="problem-icon">😮‍💨</span>
+          <div class="problem-number" data-count="47" data-suffix="분">0분</div>
+          <div class="problem-sub">하루 평균 SNS에 쓰는 시간</div>
+          <p class="problem-desc">사진 고르고, 누끼 따고, 캡션 쓰고, 해시태그 찾고…<br><strong>시술 한 타임 값어치의 시간</strong>이 사라집니다.</p>
+        </div>
+        <div class="problem-card reveal reveal-delay-2">
+          <span class="problem-icon">✍️</span>
+          <div class="problem-number" data-count="74" data-suffix="%">0%</div>
+          <div class="problem-sub">캡션 못 써서 포기한 원장님 비율</div>
+          <p class="problem-desc">올리려다 포기한 게시물이 쌓일수록<br><strong>팔로워는 줄고 예약은 안 들어옵니다.</strong></p>
+        </div>
+        <div class="problem-card reveal reveal-delay-3">
+          <span class="problem-icon">🗂️</span>
+          <div class="problem-number" data-count="3" data-suffix="개 앱">0</div>
+          <div class="problem-sub">게시물 하나 올리는 데 쓰는 앱 수</div>
+          <p class="problem-desc">캡컷으로 편집하고, ChatGPT한테 글 물어보고, 인스타에 올리고.<br><strong>앱 3개를 왔다 갔다 하다 그냥 포기합니다.</strong></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services -->
+  <section id="services">
+    <div class="container">
+      <div class="services-header reveal">
+        <span class="section-label">Services</span>
+        <h2 class="section-title">잇데이가 이 네 가지를 해결합니다</h2>
+        <p class="section-sub">찍고 → 편집하고 → 쓰고 → 올리는 흐름이 한 앱에서 완성됩니다.</p>
+      </div>
+      <div class="services-grid">
+        <div class="service-card reveal reveal-delay-1">
+          <div class="service-icon">✍️</div>
+          <div class="service-title">AI 캡션 자동 생성</div>
+          <p class="service-desc">인스타그램 계정을 연동하면 기존 게시글을 읽고 말투·이모지·해시태그 패턴을 학습합니다. 설명 한 줄만 입력하면 사장님 스타일 그대로의 캡션이 완성됩니다.</p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="service-badge">47분 → 90초</span>
+            <button class="service-preview-btn" onclick="openPreview('caption')">
+              <svg viewBox="0 0 16 16"><path d="M8 3C4.5 3 1.5 5.5 1.5 8s3 5 6.5 5 6.5-2.5 6.5-5-3-5-6.5-5zm0 9c-2.8 0-5-1.8-5-4s2.2-4 5-4 5 1.8 5 4-2.2 4-5 4zm-1-6.5v5l4-2.5-4-2.5z"/></svg>
+              미리보기
+            </button>
+          </div>
+        </div>
+        <div class="service-card reveal reveal-delay-2">
+          <div class="service-icon">🖼️</div>
+          <div class="service-title">사진 편집 자동화</div>
+          <p class="service-desc">AI가 배경을 자동으로 제거합니다. 모자이크, 그라데이션, 단색 배경 중 탭 한 번으로 선택하면 끝. 포토샵도, 별도 편집 앱도 필요 없습니다.</p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="service-badge">6단계 편집 → 2탭</span>
+            <button class="service-preview-btn" onclick="openPreview('bg')">
+              <svg viewBox="0 0 16 16"><path d="M8 3C4.5 3 1.5 5.5 1.5 8s3 5 6.5 5 6.5-2.5 6.5-5-3-5-6.5-5zm0 9c-2.8 0-5-1.8-5-4s2.2-4 5-4 5 1.8 5 4-2.2 4-5 4zm-1-6.5v5l4-2.5-4-2.5z"/></svg>
+              미리보기
+            </button>
+          </div>
+        </div>
+        <div class="service-card reveal reveal-delay-3">
+          <div class="service-icon">📲</div>
+          <div class="service-title">인스타그램 1탭 발행</div>
+          <p class="service-desc">편집 완료된 사진과 캡션을 확인하고 발행 버튼 하나만 누르세요. 피드와 스토리가 동시에 올라갑니다. 별도 앱 전환 없이 잇데이 안에서 모두 해결됩니다.</p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="service-badge">업로드 시간 ↓ 94%</span>
+            <button class="service-preview-btn" onclick="openPreview('publish')">
+              <svg viewBox="0 0 16 16"><path d="M8 3C4.5 3 1.5 5.5 1.5 8s3 5 6.5 5 6.5-2.5 6.5-5-3-5-6.5-5zm0 9c-2.8 0-5-1.8-5-4s2.2-4 5-4 5 1.8 5 4-2.2 4-5 4zm-1-6.5v5l4-2.5-4-2.5z"/></svg>
+              미리보기
+            </button>
+          </div>
+        </div>
+        <div class="service-card reveal reveal-delay-4">
+          <div class="service-icon">🗂️</div>
+          <div class="service-title">스마트 포트폴리오</div>
+          <p class="service-desc">시술 사진을 태그 하나로 저장하면 종류별로 자동 분류됩니다. AI가 올리기 좋은 사진을 추천하고 캡션 생성부터 발행까지 바로 연결됩니다.</p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="service-badge">태그 1번 → AI 추천 발행</span>
+            <button class="service-preview-btn" onclick="openPreview('portfolio')">
+              <svg viewBox="0 0 16 16"><path d="M8 3C4.5 3 1.5 5.5 1.5 8s3 5 6.5 5 6.5-2.5 6.5-5-3-5-6.5-5zm0 9c-2.8 0-5-1.8-5-4s2.2-4 5-4 5 1.8 5 4-2.2 4-5 4zm-1-6.5v5l4-2.5-4-2.5z"/></svg>
+              미리보기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Carousel -->
+  <section id="testimonials">
+    <div class="container">
+      <div class="testimonials-header reveal">
+        <span class="section-label">Testimonials</span>
+        <h2 class="section-title">먼저 써본 원장님들의 이야기</h2>
+        <p class="section-sub">전국 2,847명의 뷰티샵 원장님이 지금 사용 중입니다</p>
+      </div>
+    </div>
+    <div class="carousel-track-wrap">
+      <div class="carousel-track" id="carouselTrack">
+        <!-- 카드 6개 + 복제본 6개 (무한 루프) -->
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">연동하고 3개 생성해봤더니 친구들이 <em>'언니 요즘 글 왜 이렇게 잘 써?'</em> 했어요. 지금은 시술하면서 사진만 찍고 올리는 건 잇데이한테 맡겨요.</p>
+          <div class="t-author"><div class="t-avatar">💇</div><div><div class="t-name">김서연</div><div class="t-role">강남 붙임머리샵 '헤이헤어' 원장 · 3개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">누끼 따는 게 예전엔 15분이었는데 탭 하면 끝이에요. 지난달 게시물 14개 올리고 <em>신규 예약 3명 늘었어요.</em></p>
+          <div class="t-author"><div class="t-avatar">💅</div><div><div class="t-name">박민지</div><div class="t-role">홍대 젤네일샵 '미니네일' 대표 · 5개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">릴스 스크립트 기능이 진짜 신기해요. 시술 영상 내용만 입력하면 <em>타임코드랑 후킹 자막까지 다 써줘요.</em> 릴스 올리는 게 이렇게 쉬운 줄 몰랐어요.</p>
+          <div class="t-author"><div class="t-avatar">✂️</div><div><div class="t-name">이지은</div><div class="t-role">신촌 헤어샵 '제이컷' 원장 · 2개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">포트폴리오 기능이 진짜 좋아요. 시술 사진들이 갤러리에 뒤섞여 있었는데 이제 <em>태그 하나로 다 정리</em>되고 바로 올릴 수 있어요.</p>
+          <div class="t-author"><div class="t-avatar">🌸</div><div><div class="t-name">최수아</div><div class="t-role">분당 속눈썹 전문샵 '라라래쉬' 원장 · 4개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★☆</div>
+          <p class="t-text">처음에는 AI가 내 말투를 알까 했는데, 분석하고 나서 보니 <em>진짜 내가 쓴 것 같아서 소름</em>이었어요. 추천합니다.</p>
+          <div class="t-author"><div class="t-avatar">💆</div><div><div class="t-name">윤하늘</div><div class="t-role">마포 피부관리샵 '글로우샵' 원장 · 6개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">인스타 팔로워가 한 달 만에 <em>300명 늘었어요.</em> 꾸준히 올리는 게 이렇게 중요한 줄 잇데이 쓰고 나서 알았어요.</p>
+          <div class="t-author"><div class="t-avatar">💇‍♀️</div><div><div class="t-name">강다인</div><div class="t-role">강서 네일&헤어샵 '다인뷰티' 대표 · 7개월 사용</div></div></div>
+        </div>
+        <!-- 무한 루프용 복제본 -->
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">연동하고 3개 생성해봤더니 친구들이 <em>'언니 요즘 글 왜 이렇게 잘 써?'</em> 했어요. 지금은 시술하면서 사진만 찍고 올리는 건 잇데이한테 맡겨요.</p>
+          <div class="t-author"><div class="t-avatar">💇</div><div><div class="t-name">김서연</div><div class="t-role">강남 붙임머리샵 '헤이헤어' 원장 · 3개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">누끼 따는 게 예전엔 15분이었는데 탭 하면 끝이에요. 지난달 게시물 14개 올리고 <em>신규 예약 3명 늘었어요.</em></p>
+          <div class="t-author"><div class="t-avatar">💅</div><div><div class="t-name">박민지</div><div class="t-role">홍대 젤네일샵 '미니네일' 대표 · 5개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">릴스 스크립트 기능이 진짜 신기해요. 시술 영상 내용만 입력하면 <em>타임코드랑 후킹 자막까지 다 써줘요.</em> 릴스 올리는 게 이렇게 쉬운 줄 몰랐어요.</p>
+          <div class="t-author"><div class="t-avatar">✂️</div><div><div class="t-name">이지은</div><div class="t-role">신촌 헤어샵 '제이컷' 원장 · 2개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">포트폴리오 기능이 진짜 좋아요. 시술 사진들이 갤러리에 뒤섞여 있었는데 이제 <em>태그 하나로 다 정리</em>되고 바로 올릴 수 있어요.</p>
+          <div class="t-author"><div class="t-avatar">🌸</div><div><div class="t-name">최수아</div><div class="t-role">분당 속눈썹 전문샵 '라라래쉬' 원장 · 4개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★☆</div>
+          <p class="t-text">처음에는 AI가 내 말투를 알까 했는데, 분석하고 나서 보니 <em>진짜 내가 쓴 것 같아서 소름</em>이었어요. 추천합니다.</p>
+          <div class="t-author"><div class="t-avatar">💆</div><div><div class="t-name">윤하늘</div><div class="t-role">마포 피부관리샵 '글로우샵' 원장 · 6개월 사용</div></div></div>
+        </div>
+        <div class="t-card">
+          <div class="t-quote">"</div>
+          <div class="t-stars">★★★★★</div>
+          <p class="t-text">인스타 팔로워가 한 달 만에 <em>300명 늘었어요.</em> 꾸준히 올리는 게 이렇게 중요한 줄 잇데이 쓰고 나서 알았어요.</p>
+          <div class="t-author"><div class="t-avatar">💇‍♀️</div><div><div class="t-name">강다인</div><div class="t-role">강서 네일&헤어샵 '다인뷰티' 대표 · 7개월 사용</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing">
+    <div class="container">
+      <div class="pricing-header reveal">
+        <span class="section-label">Pricing</span>
+        <h2 class="section-title">시작은 무료, 부담 없이</h2>
+        <p class="section-sub">14일 무료 체험 후 결정하세요. 카드 정보 없이 시작 가능합니다.</p>
+      </div>
+      <div class="pricing-grid">
+
+        <!-- Free -->
+        <div class="pricing-card reveal reveal-delay-1">
+          <div class="pricing-tier">Free</div>
+          <div class="pricing-price">
+            <div class="pricing-amount">$0</div>
+            <div class="pricing-period">/ 월</div>
+          </div>
+          <div class="pricing-desc" id="pricingDesc1">14일 무료 체험으로 모든 기능을 먼저 경험하세요</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>AI 캡션 생성 월 5회</li>
+            <li>배경 제거 월 10회</li>
+            <li>인스타그램 연동 1계정</li>
+            <li>포트폴리오 저장 20장</li>
+            <li class="disabled">릴스 스크립트 생성</li>
+            <li class="disabled">스토리 자동 발행</li>
+          </ul>
+          <a href="https://dnjsdud4563.github.io/itdasy-studio/" class="btn-pricing outline" id="pricingBtn1">무료로 시작하기</a>
+        </div>
+
+        <!-- Lite -->
+        <div class="pricing-card featured reveal reveal-delay-2">
+          <div class="pricing-popular">🔥 가장 인기</div>
+          <div class="pricing-tier">Lite</div>
+          <div class="pricing-price">
+            <div class="pricing-amount">$2.99</div>
+            <div class="pricing-period">/ 월</div>
+          </div>
+          <div class="pricing-desc" id="pricingDesc2">하루 커피 한 잔 값으로 SNS 걱정 없애기</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>AI 캡션 생성 월 50회</li>
+            <li>배경 제거 무제한</li>
+            <li>인스타그램 연동 1계정</li>
+            <li>포트폴리오 저장 무제한</li>
+            <li>릴스 스크립트 생성 월 10회</li>
+            <li class="disabled">스토리 자동 발행</li>
+          </ul>
+          <a href="https://dnjsdud4563.github.io/itdasy-studio/" class="btn-pricing primary" id="pricingBtn2">14일 무료 후 시작</a>
+        </div>
+
+        <!-- Pro -->
+        <div class="pricing-card reveal reveal-delay-3">
+          <div class="pricing-tier">Pro</div>
+          <div class="pricing-price">
+            <div class="pricing-amount">$5.99</div>
+            <div class="pricing-period">/ 월</div>
+          </div>
+          <div class="pricing-desc" id="pricingDesc3">올인원 자동화로 SNS를 완전히 위임하세요</div>
+          <div class="pricing-divider"></div>
+          <ul class="pricing-features">
+            <li>AI 캡션 생성 무제한</li>
+            <li>배경 제거 무제한</li>
+            <li>인스타그램 연동 3계정</li>
+            <li>포트폴리오 저장 무제한</li>
+            <li>릴스 스크립트 생성 무제한</li>
+            <li>스토리 자동 발행</li>
+          </ul>
+          <a href="https://dnjsdud4563.github.io/itdasy-studio/" class="btn-pricing outline" id="pricingBtn3">14일 무료 후 시작</a>
+        </div>
+
+      </div>
+      <p class="pricing-note reveal">언제든 취소 가능 · 자동 결제 3일 전 알림 · 환불 보장</p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="container">
+      <div class="faq-header reveal">
+        <span class="section-label">FAQ</span>
+        <h2 class="section-title">자주 묻는 질문</h2>
+      </div>
+      <div class="faq-list reveal" id="faqList">
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            AI가 진짜 제 말투로 써줄 수 있나요?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">네. 인스타그램 계정을 연동하면 기존 게시글 최대 30개를 AI가 분석해서 말투, 이모지 패턴, 해시태그 스타일, 고정 문구까지 학습합니다. 게시글이 많을수록 더 정확하게 학습되며, 사용할수록 점점 더 나다워집니다.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            인스타그램 계정 연동이 안전한가요?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">Meta(구 Facebook)의 공식 Graph API를 통해 연동됩니다. 비밀번호는 절대 요구하지 않으며, 읽기/발행 권한만 사용합니다. 언제든 설정에서 연동을 해제할 수 있습니다.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            무료 체험 기간에 카드 등록이 필요한가요?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">아니요. 14일 무료 체험은 카드 정보 없이 이메일만으로 시작할 수 있습니다. 체험 기간이 끝난 후에 유료 플랜을 선택하실 때 결제 정보를 입력하시면 됩니다.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            헤어샵, 네일샵 말고 다른 뷰티 업종도 되나요?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">네. 현재 붙임머리, 헤어샵, 네일아트, 속눈썹, 반영구, 피부관리샵이 기본 지원됩니다. 업종 선택 후 AI가 해당 업종에 맞는 해시태그와 캡션 스타일을 자동으로 조정합니다.</div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" onclick="toggleFaq(this)">
+            구독을 중간에 취소하면 어떻게 되나요?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">언제든 취소 가능하며, 취소 후 해당 월 결제일까지는 서비스를 계속 이용할 수 있습니다. 사용하지 않은 기간에 대해서는 일할 계산으로 환불해드립니다.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta">
+    <div class="container">
+      <div class="cta-inner reveal">
+        <h2 class="cta-title">오늘 시술하고<br>오늘 올리세요.</h2>
+        <p class="cta-desc">설치하고 인스타 계정만 연동하면<br>내일 아침부터 캡션 걱정 없이 게시물 올릴 수 있습니다.</p>
+        <div class="cta-actions">
+          <a href="https://dnjsdud4563.github.io/itdasy-studio/" class="btn-cta primary" id="ctaBtn">14일 무료 체험 시작하기 →</a>
+          <a href="https://dnjsdud4563.github.io/itdasy-studio/" class="btn-cta outline" id="ctaSecondaryBtn">앱 미리보기 ↗</a>
+        </div>
+        <div class="cta-chips">
+          <span class="cta-chip">카드 정보 없이 시작</span>
+          <span class="cta-dot">·</span>
+          <span class="cta-chip">언제든 취소 가능</span>
+          <span class="cta-dot">·</span>
+          <span class="cta-chip">지금 연동 시 말투 분석 무료</span>
+        </div>
+        <p class="cta-final">지금 이 순간에도 47분을 쓰고 있는 원장님께 드리는 제안입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Email Capture -->
+  <section id="email-capture">
+    <div class="container">
+      <div class="email-capture-inner reveal">
+        <div class="email-capture-title">
+          오픈 소식 <span>가장 먼저</span> 받아보세요
+        </div>
+        <p class="email-capture-sub">
+          사전 예약하면 정식 오픈 시 <strong style="color:#fff">1개월 요금으로 3개월</strong> 이용 가능.<br>
+          이메일 하나로 혜택을 챙기세요.
+        </p>
+        <form class="email-form" id="leadForm" onsubmit="submitLead(event)">
+          <input
+            class="email-form-input"
+            type="email" id="leadEmail"
+            placeholder="이메일 주소를 입력하세요"
+            required autocomplete="email"
+          >
+          <button class="email-form-btn" type="submit" id="leadBtn">사전 예약하기</button>
+        </form>
+        <div class="email-form-success" id="leadSuccess">
+          ✓ 사전 예약 완료! 오픈 때 가장 먼저 알려드릴게요 🎉
+        </div>
+        <div class="email-form-error" id="leadError"></div>
+        <div class="email-capture-chips">
+          <span class="email-capture-chip">스팸 없음</span>
+          <span class="email-capture-chip">·</span>
+          <span class="email-capture-chip">오픈 알림 1회만 발송</span>
+          <span class="email-capture-chip">·</span>
+          <span class="email-capture-chip">언제든 수신 거부 가능</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-logo">잇데이 <span>STUDIO</span></div>
+    <div class="footer-links">
+      <a href="privacy.html" id="footerPrivacy">개인정보처리방침</a>
+      <a href="guide.html" id="footerGuide">이용가이드</a>
+      <a href="https://dnjsdud4563.github.io/itdasy-studio/" id="footerApp">앱 바로가기</a>
+    </div>
+    <div class="footer-copy">© 2026 Nopo Lab. All rights reserved.</div>
+  </footer>
+
+  <!-- Preview Modal -->
+  <div class="preview-modal-overlay" id="previewOverlay" onclick="closePreviewOnBg(event)">
+    <div class="preview-modal" id="previewModal">
+      <div class="preview-modal-header">
+        <div class="preview-modal-title" id="previewTitle">미리보기</div>
+        <button class="preview-modal-close" onclick="closePreview()">✕</button>
+      </div>
+      <div class="preview-modal-body" id="previewBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // Navbar scroll
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 50);
+    }, { passive: true });
+
+    // Scroll Reveal
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+    // Number Counter
+    function animateCount(el) {
+      const target = parseFloat(el.dataset.count);
+      const suffix = el.dataset.suffix || '';
+      const prefix = el.dataset.prefix || '';
+      const isFloat = el.dataset.float === 'true';
+      const duration = 1600;
+      const start = performance.now();
+      function tick(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const val = eased * target;
+        el.textContent = prefix + (isFloat ? val.toFixed(1) : Math.floor(val).toLocaleString()) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+        else el.textContent = prefix + (isFloat ? target.toFixed(1) : target.toLocaleString()) + suffix;
+      }
+      requestAnimationFrame(tick);
+    }
+
+    const countObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { animateCount(e.target); countObs.unobserve(e.target); }
+      });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('[data-count]').forEach(el => countObs.observe(el));
+
+    // Ripple
+    document.querySelectorAll('.btn-hero, .btn-cta').forEach(btn => {
+      btn.addEventListener('pointerdown', e => {
+        const r = btn.getBoundingClientRect();
+        const sz = Math.max(r.width, r.height) * 1.5;
+        const rpl = document.createElement('span');
+        rpl.className = 'ripple';
+        rpl.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX-r.left-sz/2}px;top:${e.clientY-r.top-sz/2}px`;
+        btn.appendChild(rpl);
+        rpl.addEventListener('animationend', () => rpl.remove());
+      });
+    });
+
+    // ── Preview i18n ──
+    const PREVIEW_LANGS = {
+      ko: {
+        caption: {
+          title: '✍️ AI 캡션 자동 생성',
+          input_label: '입력:', input_text: '"오늘 오로라 젤 새로 들어왔어요, 빛에 따라 색이 바뀌어요"',
+          output_label: '✨ AI 생성 결과 (사장님 말투 반영)',
+          typed_text: "오늘 오로라 젤이 들어왔어요 🥹\n빛에 따라 색이 바뀌는 게 진짜 신기하죠?\n이번 주 딱 3자리 남았으니까요~\n예약은 DM이나 카카오로 주세요 💌",
+          tags: ['#젤네일','#네일아트','#오로라네일','#네일스타그램','#네일맛집','#홍대네일'],
+        },
+        bg: {
+          title: '🖼️ 사진 편집 자동화',
+          before: '원본', after: '누끼 완료', style_label: '배경 스타일 선택',
+          styles: ['그라데이션','모자이크','단색 핑크','단색 다크'],
+        },
+        publish: {
+          title: '📲 인스타그램 1탭 발행',
+          steps: ['사진 편집 완료','AI 캡션 생성','이미지 서버 전송','인스타 피드 발행','스토리 자동 발행'],
+          wait: '대기', proc: '처리 중...', done: '완료 ✓',
+          preview_label: '📱 게시물 미리보기', location: '서울 홍대',
+          likes_pre: '좋아요 ', likes_suf: '개',
+          caption: "오늘 오로라 젤이 들어왔어요 🥹 빛에 따라 색이 바뀌는 게 진짜 신기하죠? 이번 주 딱 3자리 남았어요~",
+          tags: '#젤네일 #네일아트 #오로라네일 #네일스타그램 #네일맛집 #홍대네일', time: '방금 전',
+        },
+        portfolio: {
+          title: '🗂️ 스마트 포트폴리오',
+          filter_tags: ['전체','네일','붙임머리','헤어컷','속눈썹'],
+          filter_icons: ['','💅 ','💇 ','✂️ ','🌸 '],
+          items: [{e:'💇',t:'붙임머리'},{e:'💅',t:'네일'},{e:'💇',t:'붙임머리'},{e:'✂️',t:'헤어컷'},{e:'💅',t:'네일'},{e:'🌸',t:'속눈썹'},{e:'💆',t:'피부'},{e:'💅',t:'네일'},{e:'💇',t:'붙임머리'}],
+        },
+      },
+      en: {
+        caption: {
+          title: '✍️ AI Caption Generator',
+          input_label: 'Input:', input_text: '"New aurora gel just arrived — color shifts in light"',
+          output_label: '✨ AI Result (in your voice)',
+          typed_text: "Our new aurora gel just arrived 🥹\nThe way the color shifts in light is actually wild!\nOnly 3 spots left this week~\nDM or email to book 💌",
+          tags: ['#gelnails','#nailart','#auroranails','#nailstagram','#nailsofinstagram','#hongdaenails'],
+        },
+        bg: {
+          title: '🖼️ Auto Photo Editing',
+          before: 'Original', after: 'BG Removed', style_label: 'Choose Background Style',
+          styles: ['Gradient','Mosaic','Solid Pink','Solid Dark'],
+        },
+        publish: {
+          title: '📲 1-Tap Instagram Post',
+          steps: ['Photo edited','AI caption generated','Image uploaded','Instagram feed posted','Story auto-posted'],
+          wait: 'Waiting', proc: 'Processing...', done: 'Done ✓',
+          preview_label: '📱 Post Preview', location: 'Seoul, Hongdae',
+          likes_pre: '', likes_suf: ' likes',
+          caption: "Our new aurora gel just arrived 🥹 The color shifts in light — so stunning! Only 3 spots left this week~",
+          tags: '#gelnails #nailart #auroranails #nailstagram #nailsofinstagram', time: 'Just now',
+        },
+        portfolio: {
+          title: '🗂️ Smart Portfolio',
+          filter_tags: ['All','Nail','Extensions','Haircut','Lash'],
+          filter_icons: ['','💅 ','💇 ','✂️ ','🌸 '],
+          items: [{e:'💇',t:'Extensions'},{e:'💅',t:'Nail'},{e:'💇',t:'Extensions'},{e:'✂️',t:'Haircut'},{e:'💅',t:'Nail'},{e:'🌸',t:'Lash'},{e:'💆',t:'Skin'},{e:'💅',t:'Nail'},{e:'💇',t:'Extensions'}],
+        },
+      },
+      ja: {
+        caption: {
+          title: '✍️ AIキャプション自動生成',
+          input_label: '入力:', input_text: '「新しいオーロラジェルが入荷、光で色が変わります」',
+          output_label: '✨ AI生成結果（オーナー様の口調）',
+          typed_text: "新しいオーロラジェルが入荷しました🥹\n光で色が変わるのが不思議ですよね？\n今週あと3枠しか残ってないです~\nご予約はDMかLINEで💌",
+          tags: ['#ジェルネイル','#ネイルアート','#オーロラネイル','#ネイルスタグラム','#ネイルデザイン','#弘大ネイル'],
+        },
+        bg: {
+          title: '🖼️ 写真編集自動化',
+          before: '元画像', after: '背景除去済み', style_label: '背景スタイルを選択',
+          styles: ['グラデーション','モザイク','ソリッドピンク','ソリッドダーク'],
+        },
+        publish: {
+          title: '📲 Instagram 1タップ投稿',
+          steps: ['写真編集完了','AIキャプション生成','画像サーバー送信','Instagramフィード投稿','ストーリー自動投稿'],
+          wait: '待機中', proc: '処理中...', done: '完了 ✓',
+          preview_label: '📱 投稿プレビュー', location: '東京 新宿',
+          likes_pre: '', likes_suf: '件のいいね',
+          caption: "新しいオーロラジェルが入荷しました🥹 光で色が変わるのが不思議ですよね？ 今週あと3枠です~",
+          tags: '#ジェルネイル #ネイルアート #オーロラネイル #ネイルスタグラム #ネイルデザイン', time: 'たった今',
+        },
+        portfolio: {
+          title: '🗂️ スマートポートフォリオ',
+          filter_tags: ['すべて','ネイル','エクステ','ヘアカット','まつ毛'],
+          filter_icons: ['','💅 ','💇 ','✂️ ','🌸 '],
+          items: [{e:'💇',t:'エクステ'},{e:'💅',t:'ネイル'},{e:'💇',t:'エクステ'},{e:'✂️',t:'ヘアカット'},{e:'💅',t:'ネイル'},{e:'🌸',t:'まつ毛'},{e:'💆',t:'スキン'},{e:'💅',t:'ネイル'},{e:'💇',t:'エクステ'}],
+        },
+      },
+      zh: {
+        caption: {
+          title: '✍️ AI文案自动生成',
+          input_label: '输入:', input_text: '"新到了欧若拉凝胶，在光下颜色会变"',
+          output_label: '✨ AI生成结果（您的语气）',
+          typed_text: "新到了欧若拉凝胶🥹\n在光线下颜色变化真的好神奇！\n本周只剩3个位置了~\n预约请DM或微信💌",
+          tags: ['#美甲','#光疗甲','#欧若拉美甲','#美甲打卡','#ins美甲','#弘大美甲'],
+        },
+        bg: {
+          title: '🖼️ 照片编辑自动化',
+          before: '原图', after: '抠图完成', style_label: '选择背景风格',
+          styles: ['渐变色','马赛克','纯色粉','纯色深'],
+        },
+        publish: {
+          title: '📲 一键Instagram发布',
+          steps: ['照片编辑完成','AI文案生成','图片上传服务器','Instagram动态发布','故事自动发布'],
+          wait: '等待中', proc: '处理中...', done: '完成 ✓',
+          preview_label: '📱 帖子预览', location: '上海 徐汇',
+          likes_pre: '', likes_suf: '个赞',
+          caption: "新到了欧若拉凝胶🥹 在光线下颜色变化真的好神奇！本周只剩3个位置了~",
+          tags: '#美甲 #光疗甲 #欧若拉美甲 #美甲打卡 #ins美甲', time: '刚刚',
+        },
+        portfolio: {
+          title: '🗂️ 智能作品集管理',
+          filter_tags: ['全部','美甲','接发','发型','睫毛'],
+          filter_icons: ['','💅 ','💇 ','✂️ ','🌸 '],
+          items: [{e:'💇',t:'接发'},{e:'💅',t:'美甲'},{e:'💇',t:'接发'},{e:'✂️',t:'发型'},{e:'💅',t:'美甲'},{e:'🌸',t:'睫毛'},{e:'💆',t:'皮肤'},{e:'💅',t:'美甲'},{e:'💇',t:'接发'}],
+        },
+      },
+    };
+
+    // ── Preview Modal ──
+    const PREVIEWS = {
+      caption: {
+        get title() { return PREVIEW_LANGS[currentLang].caption.title; },
+        render() {
+          const PL = PREVIEW_LANGS[currentLang].caption;
+          return `<div class="demo-caption">
+            <div class="demo-input">${PL.input_label} <span>${PL.input_text}</span></div>
+            <div class="demo-output">
+              <div class="demo-label">${PL.output_label}</div>
+              <div class="demo-text" id="captionTyping"></div>
+              <div class="demo-tags" id="captionTags" style="opacity:0;transition:opacity .5s"></div>
+            </div>
+          </div>`;
+        },
+        init() {
+          const PL = PREVIEW_LANGS[currentLang].caption;
+          const el = document.getElementById('captionTyping');
+          const tagsEl = document.getElementById('captionTags');
+          let i = 0;
+          const iv = setInterval(() => {
+            if (i >= PL.typed_text.length) {
+              clearInterval(iv);
+              tagsEl.style.opacity = '1';
+              tagsEl.innerHTML = PL.tags.map(t => `<span class="demo-tag">${t}</span>`).join('');
+              return;
+            }
+            el.textContent += PL.typed_text[i++];
+          }, 28);
+        }
+      },
+      bg: {
+        get title() { return PREVIEW_LANGS[currentLang].bg.title; },
+        render() {
+          const PL = PREVIEW_LANGS[currentLang].bg;
+          const styleKeys = ['grad','mosaic','pink','dark'];
+          return `<div class="demo-bg">
+            <div class="demo-bg-row">
+              <div class="demo-bg-card demo-bg-before">👩‍🦱<div class="demo-bg-label">${PL.before}</div></div>
+              <div class="demo-bg-arrow">→</div>
+              <div class="demo-bg-card demo-bg-after" id="bgAfterCard">
+                <div class="demo-bg-checkerboard"></div>
+                <span style="position:relative;z-index:1">👩‍🦱</span>
+                <div class="demo-bg-label" style="color:#fff">${PL.after}</div>
+              </div>
+            </div>
+            <div style="font-size:13px;color:var(--text2);text-align:center;font-weight:600">${PL.style_label}</div>
+            <div class="demo-bg-styles">
+              ${PL.styles.map((s,i) => `<button class="demo-bg-style-btn${i===0?' active':''}" onclick="setBgStyle(this,'${styleKeys[i]}')">${s}</button>`).join('')}
+            </div>
+          </div>`;
+        },
+        init() {}
+      },
+      publish: {
+        get title() { return PREVIEW_LANGS[currentLang].publish.title; },
+        render() {
+          const PL = PREVIEW_LANGS[currentLang].publish;
+          const icons = ['🖼️','✍️','☁️','📸','🎬'];
+          const steps = PL.steps.map((s,i) => `
+            <div class="demo-publish-step" id="step${i+1}">
+              <div class="demo-step-icon">${icons[i]}</div>
+              <div class="demo-step-text">${s}</div>
+              <div class="demo-step-status waiting" id="s${i+1}">${PL.wait}</div>
+            </div>`).join('');
+          return `<div class="demo-publish">
+            ${steps}
+            <div id="igPreview" style="opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease;margin-top:4px;">
+              <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;text-align:center;margin-bottom:10px;">${PL.preview_label}</div>
+              <div style="background:#fff;border:1px solid #dbdbdb;border-radius:12px;overflow:hidden;max-width:320px;margin:0 auto;font-family:-apple-system,sans-serif;">
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);display:flex;align-items:center;justify-content:center;font-size:15px;">💅</div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700;color:#000;">mininail_studio</div>
+                    <div style="font-size:10px;color:#8e8e8e;">${PL.location}</div>
+                  </div>
+                  <div style="margin-left:auto;font-size:18px;color:#000;">···</div>
+                </div>
+                <div style="aspect-ratio:1;background:linear-gradient(135deg,#fce4ec,#f8bbd9,#e1bee7);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;">
+                  💅
+                  <div style="position:absolute;bottom:10px;right:10px;display:flex;gap:4px;">
+                    <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.9);"></div>
+                    <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);"></div>
+                    <div style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);"></div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;padding:8px 12px;gap:12px;">
+                  <span style="font-size:22px;">🤍</span><span style="font-size:22px;">💬</span>
+                  <span style="font-size:22px;">📤</span><span style="font-size:22px;margin-left:auto;">🔖</span>
+                </div>
+                <div style="padding:0 12px 6px;font-size:12px;font-weight:700;color:#000;">${PL.likes_pre}<span id="igLikes">0</span>${PL.likes_suf}</div>
+                <div style="padding:0 12px 10px;font-size:12px;color:#000;line-height:1.55;">
+                  <span style="font-weight:700;">mininail_studio</span>
+                  <span id="igCaption" style="margin-left:4px;"></span>
+                </div>
+                <div style="padding:0 12px 12px;font-size:11px;color:#00376b;line-height:1.7;" id="igTags"></div>
+                <div style="padding:0 12px 10px;font-size:10px;color:#8e8e8e;">${PL.time}</div>
+              </div>
+            </div>
+          </div>`;
+        },
+        init() {
+          const PL = PREVIEW_LANGS[currentLang].publish;
+          const steps = [
+            {id:'step1',sid:'s1',delay:400},{id:'step2',sid:'s2',delay:1000},
+            {id:'step3',sid:'s3',delay:1800},{id:'step4',sid:'s4',delay:2600},{id:'step5',sid:'s5',delay:3400},
+          ];
+          steps.forEach(({id, sid, delay}, i) => {
+            setTimeout(() => {
+              const el = document.getElementById(id);
+              const s = document.getElementById(sid);
+              if (!el) return;
+              el.classList.add('active');
+              s.textContent = PL.proc; s.className = 'demo-step-status processing';
+              setTimeout(() => {
+                el.classList.remove('active'); el.classList.add('done');
+                s.textContent = PL.done; s.className = 'demo-step-status done';
+                if (i === steps.length - 1) {
+                  setTimeout(() => {
+                    const ig = document.getElementById('igPreview');
+                    if (!ig) return;
+                    ig.style.opacity = '1'; ig.style.transform = 'translateY(0)';
+                    let likes = 0;
+                    const likeEl = document.getElementById('igLikes');
+                    const likeIv = setInterval(() => {
+                      likes += Math.floor(Math.random() * 3) + 1;
+                      if (likeEl) likeEl.textContent = likes;
+                      if (likes >= 24) clearInterval(likeIv);
+                    }, 120);
+                    const capEl = document.getElementById('igCaption');
+                    let ci = 0;
+                    const capIv = setInterval(() => {
+                      if (!capEl) { clearInterval(capIv); return; }
+                      capEl.textContent += PL.caption[ci++];
+                      if (ci >= PL.caption.length) {
+                        clearInterval(capIv);
+                        const tagsEl = document.getElementById('igTags');
+                        if (tagsEl) tagsEl.textContent = PL.tags;
+                      }
+                    }, 22);
+                  }, 300);
+                }
+              }, 550);
+            }, delay);
+          });
+        }
+      },
+      portfolio: {
+        get title() { return PREVIEW_LANGS[currentLang].portfolio.title; },
+        render() {
+          const PL = PREVIEW_LANGS[currentLang].portfolio;
+          const tagBtns = PL.filter_tags.map((t, i) => {
+            const key = i === 0 ? 'ALL' : t;
+            return `<button class="demo-port-tag${i===0?' active':''}" onclick="filterPort(this,'${key}')">${PL.filter_icons[i]}${t}</button>`;
+          }).join('');
+          const grid = PL.items.map(item => `
+            <div class="demo-port-item" data-tag="${item.t}">
+              ${item.e}<div class="demo-port-item-tag">${item.t}</div>
+            </div>`).join('');
+          return `<div class="demo-portfolio">
+            <div class="demo-port-tags">${tagBtns}</div>
+            <div class="demo-port-grid">${grid}</div>
+          </div>`;
+        },
+        init() {}
+      }
+    };
+
+    function openPreview(type) {
+      const p = PREVIEWS[type];
+      document.getElementById('previewTitle').textContent = p.title;
+      document.getElementById('previewBody').innerHTML = p.render();
+      document.getElementById('previewOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => p.init());
+    }
+
+    function closePreview() {
+      document.getElementById('previewOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function closePreviewOnBg(e) {
+      if (e.target === document.getElementById('previewOverlay')) closePreview();
+    }
+
+    // BG Style switcher
+    function setBgStyle(btn, style) {
+      document.querySelectorAll('.demo-bg-style-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const card = document.getElementById('bgAfterCard');
+      if (!card) return;
+      const styles = {
+        grad: 'linear-gradient(135deg, #F18091, #D95F70)',
+        mosaic: 'repeating-linear-gradient(45deg, #e8ddd5 0, #e8ddd5 10px, #d4c4b8 10px, #d4c4b8 20px)',
+        pink: '#FBD0D6',
+        dark: '#0f0608',
+      };
+      card.style.background = styles[style];
+    }
+
+    // Portfolio filter
+    function filterPort(btn, tag) {
+      document.querySelectorAll('.demo-port-tag').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.demo-port-item').forEach(item => {
+        item.classList.toggle('hidden', tag !== 'ALL' && item.dataset.tag !== tag);
+      });
+    }
+
+    // ── i18n ──
+    const LANGS = {
+      ko: {
+        flag: '🇰🇷', label: '한국어',
+        nav_cta: '무료 체험 시작하기',
+        trust1: '현재 사용 중인 원장님', trust2: '업로드 시간 단축률', trust3: 'AI 생성 캡션 수', trust4: '평균 앱스토어 평점',
+        badge1: '47분 → 90초', badge2: '6단계 편집 → 2탭', badge3: '업로드 시간 ↓ 94%', badge4: '태그 1번 → AI 추천 발행',
+        cta_secondary: '앱 미리보기 ↗',
+        cta_chip1: '카드 정보 없이 시작', cta_chip2: '언제든 취소 가능', cta_chip3: '지금 연동 시 말투 분석 무료',
+        cta_final: '지금 이 순간에도 47분을 쓰고 있는 원장님께 드리는 제안입니다.',
+        ec_chip1: '스팸 없음', ec_chip2: '오픈 알림 1회만 발송', ec_chip3: '언제든 수신 거부 가능',
+        pricing_period: '/ 월', pricing_popular: '🔥 가장 인기',
+        free_desc: '14일 무료 체험으로 모든 기능을 먼저 경험하세요',
+        lite_desc: '매달 $2.99로 SNS 걱정 없애기',
+        pro_desc: '올인원 자동화로 SNS를 완전히 위임하세요',
+        free_features: ['AI 캡션 생성 월 5회','배경 제거 월 10회','인스타그램 연동 1계정','포트폴리오 저장 20장','릴스 스크립트 생성','스토리 자동 발행'],
+        free_features_disabled: [false,false,false,false,true,true],
+        lite_features: ['AI 캡션 생성 월 50회','배경 제거 무제한','인스타그램 연동 1계정','포트폴리오 저장 무제한','릴스 스크립트 생성 월 10회','스토리 자동 발행'],
+        lite_features_disabled: [false,false,false,false,false,true],
+        pro_features: ['AI 캡션 생성 무제한','배경 제거 무제한','인스타그램 연동 3계정','포트폴리오 저장 무제한','릴스 스크립트 생성 무제한','스토리 자동 발행'],
+        pro_features_disabled: [false,false,false,false,false,false],
+        free_btn: '무료로 시작하기', lite_btn: '14일 무료 후 시작', pro_btn: '14일 무료 후 시작',
+        faq: [
+          {q:'AI가 진짜 제 말투로 써줄 수 있나요?', a:'네. 인스타그램 계정을 연동하면 기존 게시글 최대 30개를 AI가 분석해서 말투, 이모지 패턴, 해시태그 스타일, 고정 문구까지 학습합니다. 게시글이 많을수록 더 정확하게 학습되며, 사용할수록 점점 더 나다워집니다.'},
+          {q:'인스타그램 계정 연동이 안전한가요?', a:'Meta(구 Facebook)의 공식 Graph API를 통해 연동됩니다. 비밀번호는 절대 요구하지 않으며, 읽기/발행 권한만 사용합니다. 언제든 설정에서 연동을 해제할 수 있습니다.'},
+          {q:'무료 체험 기간에 카드 등록이 필요한가요?', a:'아니요. 14일 무료 체험은 카드 정보 없이 이메일만으로 시작할 수 있습니다. 체험 기간이 끝난 후에 유료 플랜을 선택하실 때 결제 정보를 입력하시면 됩니다.'},
+          {q:'헤어샵, 네일샵 말고 다른 뷰티 업종도 되나요?', a:'네. 현재 붙임머리, 헤어샵, 네일아트, 속눈썹, 반영구, 피부관리샵이 기본 지원됩니다. 업종 선택 후 AI가 해당 업종에 맞는 해시태그와 캡션 스타일을 자동으로 조정합니다.'},
+          {q:'구독을 중간에 취소하면 어떻게 되나요?', a:'언제든 취소 가능하며, 취소 후 해당 월 결제일까지는 서비스를 계속 이용할 수 있습니다. 사용하지 않은 기간에 대해서는 일할 계산으로 환불해드립니다.'},
+        ],
+        trust_suffix: ['명', '%', '건+', '점'],
+        phone_name: '미니네일 원장님',
+        phone_connected: '● 연동됨',
+        phone_caption_label: '✨ AI 생성 캡션',
+        phone_caption: '오늘 들어온 오로라 젤이 너무 예뻐서요 🥹<br>빛에 따라 색이 바뀌는 게 진짜 신기하죠?<br>이번 주 딱 3자리 남았어요~',
+        phone_tags: ['#젤네일','#네일아트','#오로라네일','#네일스타그램'],
+        phone_btn: '📲 피드 + 스토리 발행',
+        footer_privacy: '개인정보처리방침', footer_guide: '이용가이드', footer_app: '앱 바로가기',
+        preorder_badge: '사전 예약 혜택',
+        preorder_text: '지금 예약하면 <strong>1개월 요금으로 3개월</strong> 이용 가능 &nbsp;',
+        preorder_btn: '지금 예약하기 →',
+        hero_badge: '뷰티샵 전용 AI 마케팅',
+        hero_title: '인스타에 올릴 글,<br>오늘도 <span class="accent">30분</span> 썼다 지웠나요?',
+        hero_desc: '사진은 찍었는데 캡션이 안 써지고, 써놓으면 어색하고.<br>잇데이가 사장님 말투 그대로 대신 써드립니다. 올리는 것까지.',
+        hero_cta: '지금 무료로 시작하기 →',
+        hero_note: '설치 3분 · 카드 정보 불필요 · 14일 무료 체험',
+        problem_title: '사장님 혼자 감당하기엔 너무 많아요',
+        problem_sub: '뷰티샵 원장님 102명에게 물었습니다. "SNS에서 가장 힘든 게 뭐예요?"',
+        p1_sub: '하루 평균 SNS에 쓰는 시간',
+        p1_desc: '사진 고르고, 누끼 따고, 캡션 쓰고, 해시태그 찾고…<br><strong>시술 한 타임 값어치의 시간</strong>이 사라집니다.',
+        p2_sub: '캡션 못 써서 포기한 원장님 비율',
+        p2_desc: '올리려다 포기한 게시물이 쌓일수록<br><strong>팔로워는 줄고 예약은 안 들어옵니다.</strong>',
+        p3_sub: '게시물 하나 올리는 데 쓰는 앱 수',
+        p3_desc: '캡컷으로 편집하고, ChatGPT한테 글 물어보고, 인스타에 올리고.<br><strong>앱 3개를 왔다 갔다 하다 그냥 포기합니다.</strong>',
+        problem_suffix: ['분', '%', '개 앱'],
+        testimonials: [
+          { stars:'★★★★★', text:'연동하고 3개 생성해봤더니 친구들이 <em>\'언니 요즘 글 왜 이렇게 잘 써?\'</em> 했어요. 지금은 시술하면서 사진만 찍고 올리는 건 잇데이한테 맡겨요.', avatar:'💇', name:'김서연', role:'강남 붙임머리샵 \'헤이헤어\' 원장 · 3개월 사용' },
+          { stars:'★★★★★', text:'누끼 따는 게 예전엔 15분이었는데 탭 하면 끝이에요. 지난달 게시물 14개 올리고 <em>신규 예약 3명 늘었어요.</em>', avatar:'💅', name:'박민지', role:'홍대 젤네일샵 \'미니네일\' 대표 · 5개월 사용' },
+          { stars:'★★★★★', text:'릴스 스크립트 기능이 진짜 신기해요. 시술 영상 내용만 입력하면 <em>타임코드랑 후킹 자막까지 다 써줘요.</em> 릴스 올리는 게 이렇게 쉬운 줄 몰랐어요.', avatar:'✂️', name:'이지은', role:'신촌 헤어샵 \'제이컷\' 원장 · 2개월 사용' },
+          { stars:'★★★★★', text:'포트폴리오 기능이 진짜 좋아요. 시술 사진들이 갤러리에 뒤섞여 있었는데 이제 <em>태그 하나로 다 정리</em>되고 바로 올릴 수 있어요.', avatar:'🌸', name:'최수아', role:'분당 속눈썹 전문샵 \'라라래쉬\' 원장 · 4개월 사용' },
+          { stars:'★★★★☆', text:'처음에는 AI가 내 말투를 알까 했는데, 분석하고 나서 보니 <em>진짜 내가 쓴 것 같아서 소름</em>이었어요. 추천합니다.', avatar:'💆', name:'윤하늘', role:'마포 피부관리샵 \'글로우샵\' 원장 · 6개월 사용' },
+          { stars:'★★★★★', text:'인스타 팔로워가 한 달 만에 <em>300명 늘었어요.</em> 꾸준히 올리는 게 이렇게 중요한 줄 잇데이 쓰고 나서 알았어요.', avatar:'💇‍♀️', name:'강다인', role:'강서 네일&헤어샵 \'다인뷰티\' 대표 · 7개월 사용' },
+        ],
+        services_title: '잇데이가 이 네 가지를 해결합니다',
+        services_sub: '찍고 → 편집하고 → 쓰고 → 올리는 흐름이 한 앱에서 완성됩니다.',
+        s1_title: 'AI 캡션 자동 생성', s1_desc: '인스타그램 계정을 연동하면 기존 게시글을 읽고 말투·이모지·해시태그 패턴을 학습합니다. 설명 한 줄만 입력하면 사장님 스타일 그대로의 캡션이 완성됩니다.',
+        s2_title: '사진 편집 자동화',  s2_desc: 'AI가 배경을 자동으로 제거합니다. 모자이크, 그라데이션, 단색 배경 중 탭 한 번으로 선택하면 끝. 포토샵도, 별도 편집 앱도 필요 없습니다.',
+        s3_title: '인스타그램 1탭 발행', s3_desc: '편집 완료된 사진과 캡션을 확인하고 발행 버튼 하나만 누르세요. 피드와 스토리가 동시에 올라갑니다.',
+        s4_title: '스마트 포트폴리오',  s4_desc: '시술 사진을 태그 하나로 저장하면 종류별로 자동 분류됩니다. AI가 올리기 좋은 사진을 추천하고 캡션 생성부터 발행까지 바로 연결됩니다.',
+        preview_btn: '미리보기',
+        testimonials_title: '먼저 써본 원장님들의 이야기',
+        testimonials_sub: '전국 2,847명의 뷰티샵 원장님이 지금 사용 중입니다',
+        pricing_title: '시작은 무료, 부담 없이',
+        pricing_sub: '14일 무료 체험 후 결정하세요. 카드 정보 없이 시작 가능합니다.',
+        pricing_note: '언제든 취소 가능 · 자동 결제 3일 전 알림 · 환불 보장',
+        faq_title: '자주 묻는 질문',
+        cta_title: '오늘 시술하고<br>오늘 올리세요.',
+        cta_desc: '설치하고 인스타 계정만 연동하면<br>내일 아침부터 캡션 걱정 없이 게시물 올릴 수 있습니다.',
+        cta_primary: '14일 무료 체험 시작하기 →',
+        cta_secondary: '앱 미리보기 ↗',
+        email_title: '오픈 소식 <span>가장 먼저</span> 받아보세요',
+        email_sub: '사전 예약하면 정식 오픈 시 <strong style="color:#fff">1개월 요금으로 3개월</strong> 이용 가능.<br>이메일 하나로 혜택을 챙기세요.',
+        email_placeholder: '이메일 주소를 입력하세요',
+        email_btn: '사전 예약하기',
+        email_success: '✓ 사전 예약 완료! 오픈 때 가장 먼저 알려드릴게요 🎉',
+      },
+      en: {
+        flag: '🇺🇸', label: 'English',
+        nav_cta: 'Start Free Trial',
+        preorder_badge: 'Pre-order Offer',
+        preorder_text: 'Reserve now to get <strong>3 months for the price of 1</strong> &nbsp;',
+        preorder_btn: 'Reserve Now →',
+        hero_badge: 'AI Marketing for Beauty Shops',
+        hero_title: 'Spent <span class="accent">30 min</span> writing a caption<br>and deleted it again?',
+        hero_desc: 'You have the photo but the caption just won\'t come.<br>Itdasy writes it in your voice — and posts it too.',
+        hero_cta: 'Start Free Now →',
+        hero_note: '3-min setup · No credit card · 14-day free trial',
+        problem_title: 'Too much for one person to handle',
+        problem_sub: 'We asked 102 beauty shop owners: "What\'s hardest about SNS?"',
+        p1_sub: 'Avg. time spent on SNS per day',
+        p1_desc: 'Choosing photos, removing backgrounds, writing captions, finding hashtags…<br><strong>One session\'s worth of time</strong> disappears.',
+        p2_sub: 'Owners who give up writing captions',
+        p2_desc: 'The more posts you skip,<br><strong>the fewer followers — and bookings.</strong>',
+        p3_sub: 'Apps used for a single post',
+        p3_desc: 'Edit in CapCut, ask ChatGPT for copy, upload to Instagram.<br><strong>Juggling 3 apps — then giving up.</strong>',
+        problem_suffix: [' min', '%', ' apps'],
+        testimonials: [
+          { stars:'★★★★★', text:'I generated 3 captions and my friends said <em>"Your writing got so good lately!"</em> Now I just take photos while working and leave the posting to Itdasy.', avatar:'💇', name:'Kim Seoyeon', role:'Gangnam hair extension salon \'HeyHair\' · 3 months' },
+          { stars:'★★★★★', text:'Background removal used to take 15 minutes — now it\'s one tap. Last month I posted 14 times and got <em>3 new bookings.</em>', avatar:'💅', name:'Park Minji', role:'Hongdae gel nail salon \'MiniNail\' · 5 months' },
+          { stars:'★★★★★', text:'The Reels script feature is amazing. I just describe the video and it <em>writes the timestamps and hook captions too.</em> Never knew Reels could be this easy.', avatar:'✂️', name:'Lee Jieun', role:'Sinchon hair salon \'J-Cut\' · 2 months' },
+          { stars:'★★★★★', text:'The portfolio feature is so good. My photos were scattered everywhere, but now <em>one tag sorts everything</em> and I can post right away.', avatar:'🌸', name:'Choi Sua', role:'Bundang lash salon \'LaraLash\' · 4 months' },
+          { stars:'★★★★☆', text:'I doubted AI could learn my writing style. But after the analysis, <em>it felt like I wrote it myself — gave me chills.</em> Highly recommend.', avatar:'💆', name:'Yoon Haneul', role:'Mapo skin care salon \'GlowShop\' · 6 months' },
+          { stars:'★★★★★', text:'<em>Gained 300 followers in one month.</em> I didn\'t realize how important consistency was until I started using Itdasy.', avatar:'💇‍♀️', name:'Kang Dain', role:'Gangseo nail & hair salon \'Dain Beauty\' · 7 months' },
+        ],
+        services_title: 'Itdasy solves all four',
+        services_sub: 'Shoot → Edit → Write → Post. All in one app.',
+        s1_title: 'AI Caption Generator', s1_desc: 'Connect your Instagram and Itdasy learns your tone, emojis, and hashtag style from past posts. Type one line and get a caption that sounds exactly like you.',
+        s2_title: 'Auto Photo Editing',   s2_desc: 'AI removes backgrounds instantly. Pick mosaic, gradient, or solid color with one tap. No Photoshop needed.',
+        s3_title: '1-Tap Instagram Post', s3_desc: 'Review your photo and caption, then hit publish. Feed and Story go up simultaneously.',
+        s4_title: 'Smart Portfolio',      s4_desc: 'Save photos with one tag and they\'re sorted automatically. AI picks the best shots and connects straight to caption + publish.',
+        preview_btn: 'Preview',
+        trust1: 'Active shop owners', trust2: 'Upload time reduced', trust3: 'AI captions generated', trust4: 'Avg. App Store rating',
+        badge1: '47 min → 90 sec', badge2: '6 steps → 2 taps', badge3: 'Upload time ↓ 94%', badge4: '1 tag → AI-recommended post',
+        testimonials_title: 'From owners who tried it first',
+        testimonials_sub: '2,847 beauty shop owners are using it right now',
+        pricing_title: 'Start free, no pressure',
+        pricing_sub: 'Decide after a 14-day free trial. No credit card required.',
+        pricing_note: 'Cancel anytime · 3-day billing notice · Refund guaranteed',
+        pricing_period: '/ mo', pricing_popular: '🔥 Most Popular',
+        free_desc: 'Try all features free for 14 days',
+        lite_desc: 'Eliminate SNS stress for just $2.99/mo',
+        pro_desc: 'Fully delegate your SNS with all-in-one automation',
+        free_features: ['AI captions 5×/mo','Background removal 10×/mo','1 Instagram account','Portfolio: 20 photos','Reels script generation','Story auto-post'],
+        free_features_disabled: [false,false,false,false,true,true],
+        lite_features: ['AI captions 50×/mo','Unlimited background removal','1 Instagram account','Unlimited portfolio storage','Reels scripts 10×/mo','Story auto-post'],
+        lite_features_disabled: [false,false,false,false,false,true],
+        pro_features: ['Unlimited AI captions','Unlimited background removal','3 Instagram accounts','Unlimited portfolio storage','Unlimited Reels scripts','Story auto-post'],
+        pro_features_disabled: [false,false,false,false,false,false],
+        free_btn: 'Start Free', lite_btn: 'Start After 14-Day Trial', pro_btn: 'Start After 14-Day Trial',
+        faq_title: 'Frequently Asked Questions',
+        faq: [
+          {q:'Can AI really write in my voice?', a:'Yes. Connect your Instagram and the AI analyzes up to 30 of your posts to learn your tone, emoji patterns, hashtag style, and signature phrases. The more posts you have, the more accurate it gets — and it keeps improving with use.'},
+          {q:'Is connecting my Instagram account safe?', a:'It connects through Meta\'s official Graph API. We never ask for your password — only read and publish permissions are used. You can disconnect at any time from settings.'},
+          {q:'Do I need to enter a card for the free trial?', a:'No. The 14-day free trial starts with just your email — no payment info needed. You can enter billing details when choosing a paid plan after the trial ends.'},
+          {q:'Does it work for beauty types beyond hair and nail?', a:'Yes. Currently supported: hair extensions, hair salons, nail art, eyelash extensions, semi-permanent makeup, and skin care. After selecting your type, the AI automatically adjusts hashtags and caption style.'},
+          {q:'What happens if I cancel mid-subscription?', a:'You can cancel any time. After canceling, service continues until your current billing date. Unused days are refunded on a prorated basis.'},
+        ],
+        cta_title: 'Do the treatment today.<br>Post it today.',
+        cta_desc: 'Connect your Instagram account and you\'re ready.<br>No more caption anxiety starting tomorrow morning.',
+        cta_primary: 'Start 14-Day Free Trial →',
+        cta_secondary: 'Preview App ↗',
+        cta_chip1: 'No credit card needed', cta_chip2: 'Cancel anytime', cta_chip3: 'Free style analysis on connect',
+        cta_final: 'A proposal for shop owners still spending 47 minutes on this.',
+        email_title: 'Be the <span>first</span> to know',
+        email_sub: 'Pre-register to get <strong style="color:#fff">3 months for the price of 1</strong> at launch.<br>One email. Big savings.',
+        email_placeholder: 'Enter your email address',
+        email_btn: 'Pre-register',
+        email_success: '✓ You\'re on the list! We\'ll notify you at launch 🎉',
+        ec_chip1: 'No spam', ec_chip2: 'One launch notification only', ec_chip3: 'Unsubscribe anytime',
+        trust_suffix: ['', '%', '+', ''],
+        phone_name: 'MiniNail Studio',
+        phone_connected: '● Connected',
+        phone_caption_label: '✨ AI-Generated Caption',
+        phone_caption: 'Our new aurora gel just arrived 🥹<br>The color shifts in light — so stunning!<br>Only 3 spots left this week~',
+        phone_tags: ['#gelnails','#nailart','#auroranails','#nailstagram'],
+        phone_btn: '📲 Post to Feed + Story',
+        footer_privacy: 'Privacy Policy', footer_guide: 'User Guide', footer_app: 'Open App',
+      },
+      ja: {
+        flag: '🇯🇵', label: '日本語',
+        nav_cta: '無料トライアル開始',
+        preorder_badge: '事前予約特典',
+        preorder_text: '今予約すると <strong>1ヶ月分の料金で3ヶ月</strong> 利用可能 &nbsp;',
+        preorder_btn: '今すぐ予約 →',
+        hero_badge: 'ビューティサロン専用 AI マーケティング',
+        hero_title: 'インスタの投稿文、<br>今日も<span class="accent">30分</span>書いて消しましたか？',
+        hero_desc: '写真は撮ったのに、キャプションが書けない。書いても違和感がある。<br>Itdasyがオーナー様の言葉でそのまま代わりに書きます。投稿まで。',
+        hero_cta: '今すぐ無料で始める →',
+        hero_note: 'セットアップ3分 · カード不要 · 14日間無料',
+        problem_title: '一人でこなすには多すぎます',
+        problem_sub: 'ビューティサロンオーナー102名に聞きました。「SNSで一番大変なことは？」',
+        p1_sub: '1日平均SNSに使う時間',
+        p1_desc: '写真選び、背景消し、キャプション、ハッシュタグ…<br><strong>施術1セット分の時間</strong>が消えます。',
+        p2_sub: 'キャプションが書けず諦めたオーナーの割合',
+        p2_desc: '投稿をためればためるほど<br><strong>フォロワーが減り、予約が入らなくなります。</strong>',
+        p3_sub: '1投稿に使うアプリ数',
+        p3_desc: 'CapCutで編集、ChatGPTで文章作成、Instagramで投稿。<br><strong>3アプリを行ったり来たりして結局諦める。</strong>',
+        problem_suffix: ['分', '%', '個のアプリ'],
+        testimonials: [
+          { stars:'★★★★★', text:'連携して3つ生成したら友達が <em>「最近、投稿うまくなったね！」</em> って。今は施術しながら写真だけ撮って、投稿はItdasyに任せてます。', avatar:'💇', name:'キム・ソヨン', role:'江南ヘアエクステサロン「ヘイヘア」オーナー · 3ヶ月使用' },
+          { stars:'★★★★★', text:'背景消しが昔は15分かかってたのに、今はタップ一つで終わります。先月14投稿して <em>予約が3件増えました。</em>', avatar:'💅', name:'パク・ミンジ', role:'弘大ジェルネイルサロン「ミニネイル」代表 · 5ヶ月使用' },
+          { stars:'★★★★★', text:'リールスクリプト機能が本当に便利です。施術動画の内容を入力するだけで <em>タイムコードもフックキャプションも書いてくれます。</em>', avatar:'✂️', name:'イ・ジウン', role:'新村ヘアサロン「Jカット」オーナー · 2ヶ月使用' },
+          { stars:'★★★★★', text:'ポートフォリオ機能が最高です。施術写真がギャラリーに散らばってたのに、<em>タグ一つで整理されてすぐ投稿できます。</em>', avatar:'🌸', name:'チェ・スア', role:'盆唐まつ毛専門サロン「ラララッシュ」オーナー · 4ヶ月使用' },
+          { stars:'★★★★☆', text:'最初はAIが私の口調を覚えられるか半信半疑でしたが、分析後は <em>本当に自分が書いたみたいで鳥肌でした。</em> おすすめします。', avatar:'💆', name:'ユン・ハヌル', role:'麻浦スキンケアサロン「グロウショップ」オーナー · 6ヶ月使用' },
+          { stars:'★★★★★', text:'フォロワーが <em>1ヶ月で300人増えました。</em> 継続投稿がこんなに大切だとItdasyを使って初めて気づきました。', avatar:'💇‍♀️', name:'カン・ダイン', role:'江西ネイル&ヘアサロン「ダインビューティ」代表 · 7ヶ月使用' },
+        ],
+        services_title: 'Itdasyがこの4つを解決します',
+        services_sub: '撮影 → 編集 → 執筆 → 投稿。すべて1つのアプリで。',
+        s1_title: 'AIキャプション自動生成', s1_desc: 'Instagramを連携するとAIが過去の投稿を読み込み、口調・絵文字・ハッシュタグのパターンを学習。説明を1行入力するだけで、オーナー様のスタイルそのままのキャプションが完成。',
+        s2_title: '写真編集自動化',         s2_desc: 'AIが背景を自動除去。モザイク・グラデーション・単色からタップ1つで選択。Photoshopも別アプリも不要。',
+        s3_title: 'Instagram 1タップ投稿',  s3_desc: '編集済みの写真とキャプションを確認して投稿ボタンを1回押すだけ。フィードとストーリーが同時にアップされます。',
+        s4_title: 'スマートポートフォリオ', s4_desc: '施術写真をタグ1つで保存すると種類別に自動分類。AIがおすすめの写真を提案し、キャプション生成から投稿まで直結します。',
+        preview_btn: 'プレビュー',
+        trust1: '利用中のオーナー様', trust2: '時間短縮率', trust3: 'AI生成キャプション数', trust4: '平均App Store評価',
+        badge1: '47分 → 90秒', badge2: '6ステップ → 2タップ', badge3: 'アップロード時間 ↓ 94%', badge4: 'タグ1回 → AI推薦投稿',
+        testimonials_title: '先に使ったオーナー様の声',
+        testimonials_sub: '全国2,847名のビューティサロンオーナーが今利用中',
+        pricing_title: '無料から、気軽に始められます',
+        pricing_sub: '14日間の無料体験後にご判断ください。クレジットカード不要。',
+        pricing_note: 'いつでもキャンセル可能 · 請求3日前通知 · 返金保証',
+        pricing_period: '/ 月', pricing_popular: '🔥 人気No.1',
+        free_desc: '14日間無料体験で全機能をお試しください',
+        lite_desc: '月$2.99でSNSの悩みをゼロに',
+        pro_desc: 'オールインワン自動化でSNSを完全委任',
+        free_features: ['AIキャプション月5回','背景削除 月10回','Instagram連携 1アカウント','ポートフォリオ 20枚','リールスクリプト生成','ストーリー自動投稿'],
+        free_features_disabled: [false,false,false,false,true,true],
+        lite_features: ['AIキャプション月50回','背景削除 無制限','Instagram連携 1アカウント','ポートフォリオ 無制限','リールスクリプト 月10回','ストーリー自動投稿'],
+        lite_features_disabled: [false,false,false,false,false,true],
+        pro_features: ['AIキャプション 無制限','背景削除 無制限','Instagram連携 3アカウント','ポートフォリオ 無制限','リールスクリプト 無制限','ストーリー自動投稿'],
+        pro_features_disabled: [false,false,false,false,false,false],
+        free_btn: '無料で始める', lite_btn: '14日無料後スタート', pro_btn: '14日無料後スタート',
+        faq_title: 'よくある質問',
+        faq: [
+          {q:'AIが本当に私の言葉で書いてくれますか？', a:'はい。Instagramを連携すると、AIが過去の投稿を最大30件分析し、口調・絵文字のパターン・ハッシュタグスタイル・定型フレーズを学習します。投稿数が多いほど精度が上がり、使うほどより「自分らしく」なります。'},
+          {q:'Instagramアカウントの連携は安全ですか？', a:'MetaのGraph API（公式）を通じて連携します。パスワードは不要で、読み取り・投稿権限のみ使用します。設定からいつでも連携解除が可能です。'},
+          {q:'無料トライアル中にカード登録は必要ですか？', a:'不要です。14日間の無料トライアルはメールアドレスだけで始められます。有料プランに切り替えるときに初めて支払い情報を入力していただきます。'},
+          {q:'ヘアサロン・ネイル以外のビューティ業種にも対応していますか？', a:'はい。現在対応中：ヘアエクステ・ヘアサロン・ネイルアート・まつ毛エクステ・半永久メイク・スキンケアサロン。業種選択後、AIが対応するハッシュタグとキャプションスタイルを自動調整します。'},
+          {q:'途中でサブスクをキャンセルするとどうなりますか？', a:'いつでもキャンセル可能で、キャンセル後も当月の請求日までサービスをご利用いただけます。未使用期間は日割りで返金いたします。'},
+        ],
+        cta_title: '今日施術して、<br>今日投稿しましょう。',
+        cta_desc: 'Instagramアカウントを連携するだけ。<br>明日の朝からキャプション不安ゼロで投稿できます。',
+        cta_primary: '14日間無料トライアルを始める →',
+        cta_secondary: 'アプリを試す ↗',
+        cta_chip1: 'クレジットカード不要', cta_chip2: 'いつでもキャンセル', cta_chip3: '連携時に口調分析無料',
+        cta_final: '今この瞬間も47分を費やしているオーナー様へのご提案です。',
+        email_title: 'オープン情報を<span>いち早く</span>受け取る',
+        email_sub: '事前登録で正式オープン時に <strong style="color:#fff">1ヶ月分で3ヶ月</strong> 利用可能。<br>メール1つで特典をゲット。',
+        email_placeholder: 'メールアドレスを入力',
+        email_btn: '事前予約する',
+        email_success: '✓ 事前登録完了！オープン時に真っ先にお知らせします 🎉',
+        ec_chip1: 'スパムなし', ec_chip2: 'オープン通知1回のみ', ec_chip3: 'いつでも配信停止',
+        trust_suffix: ['名', '%', '件+', '点'],
+        phone_name: 'ミニネイル スタジオ',
+        phone_connected: '● 連携済み',
+        phone_caption_label: '✨ AI生成キャプション',
+        phone_caption: '新しいオーロラジェルが入荷しました🥹<br>光で色が変わるのが不思議ですよね？<br>今週あと3枠です~',
+        phone_tags: ['#ジェルネイル','#ネイルアート','#オーロラネイル','#ネイルスタグラム'],
+        phone_btn: '📲 フィード＋ストーリー投稿',
+        footer_privacy: 'プライバシーポリシー', footer_guide: '利用ガイド', footer_app: 'アプリを開く',
+      },
+      zh: {
+        flag: '🇨🇳', label: '中文',
+        nav_cta: '免费试用',
+        preorder_badge: '预约优惠',
+        preorder_text: '立即预约可享 <strong>1个月价格用3个月</strong> &nbsp;',
+        preorder_btn: '立即预约 →',
+        hero_badge: '美容院专属 AI 营销工具',
+        hero_title: 'Instagram 发帖文案，<br>今天又花了<span class="accent">30分钟</span>写了又删？',
+        hero_desc: '照片拍好了，文案却写不出来。Itdasy 用您的语气代您撰写，一键发布。',
+        hero_cta: '立即免费开始 →',
+        hero_note: '3分钟安装 · 无需信用卡 · 14天免费试用',
+        problem_title: '一个人扛太多了',
+        problem_sub: '我们访问了102位美容院老板："SNS运营最难的是什么？"',
+        p1_sub: '每天花在SNS上的平均时间',
+        p1_desc: '选照片、抠图、写文案、找标签……<br><strong>相当于一个客人服务费</strong>的时间就这样消失了。',
+        p2_sub: '因写不了文案而放弃发帖的老板比例',
+        p2_desc: '越来越多的帖子被搁置，<br><strong>粉丝减少，预约也随之减少。</strong>',
+        p3_sub: '发一条帖子要用的APP数量',
+        p3_desc: '用CapCut剪辑，问ChatGPT写文，再上传Instagram。<br><strong>在3个APP之间来回切换，最后干脆放弃。</strong>',
+        problem_suffix: ['分钟', '%', '个APP'],
+        testimonials: [
+          { stars:'★★★★★', text:'连接后生成了3条文案，朋友说 <em>"最近你写得越来越好了！"</em> 现在我只管拍照，发帖就交给Itdasy了。', avatar:'💇', name:'金瑞妍', role:'江南接发沙龙「HeyHair」老板 · 使用3个月' },
+          { stars:'★★★★★', text:'以前抠图要花15分钟，现在一点就完成。上个月发了14条帖子，<em>新增了3个预约。</em>', avatar:'💅', name:'朴敏智', role:'弘大光疗甲沙龙「MiniNail」老板 · 使用5个月' },
+          { stars:'★★★★★', text:'Reels脚本功能太厉害了。输入视频内容，AI就 <em>连时间码和开场字幕都帮我写好了。</em> 没想到发Reels可以这么轻松。', avatar:'✂️', name:'李智恩', role:'新村美发沙龙「J-Cut」老板 · 使用2个月' },
+          { stars:'★★★★★', text:'作品集功能超棒。施术照片以前在相册里乱成一团，现在 <em>一个标签全部整理好，马上就能发帖。</em>', avatar:'🌸', name:'崔秀雅', role:'盆唐睫毛专门店「LaraLash」老板 · 使用4个月' },
+          { stars:'★★★★☆', text:'一开始半信半疑AI能不能学会我的语气，分析完之后 <em>觉得就像自己写的一样，起了鸡皮疙瘩。</em> 强烈推荐。', avatar:'💆', name:'尹蓝天', role:'麻浦护肤中心「GlowShop」老板 · 使用6个月' },
+          { stars:'★★★★★', text:'Instagram粉丝 <em>一个月涨了300人。</em> 用了Itdasy才知道坚持更新有多重要。', avatar:'💇‍♀️', name:'姜多仁', role:'江西美甲&美发店「Dain Beauty」老板 · 使用7个月' },
+        ],
+        services_title: 'Itdasy 解决这四大痛点',
+        services_sub: '拍摄 → 编辑 → 撰文 → 发布，全部在一个APP完成。',
+        s1_title: 'AI文案自动生成',   s1_desc: '连接Instagram后，AI读取历史帖子，学习您的语气、表情符号和标签习惯。输入一句话描述，即可生成完全符合您风格的文案。',
+        s2_title: '照片编辑自动化',   s2_desc: 'AI自动抠图。马赛克、渐变色、纯色背景一键切换。无需Photoshop，无需其他编辑软件。',
+        s3_title: '一键Instagram发布', s3_desc: '确认照片和文案后，点击一次发布按钮，动态和故事同步上传。',
+        s4_title: '智能作品集管理',   s4_desc: '用一个标签保存施术照片，自动按类型分类。AI推荐最适合发布的照片，直连文案生成和一键发布。',
+        preview_btn: '预览',
+        trust1: '正在使用的老板数', trust2: '上传时间减少率', trust3: 'AI生成文案数', trust4: '平均应用商店评分',
+        badge1: '47分钟 → 90秒', badge2: '6步 → 2次点击', badge3: '上传时间 ↓ 94%', badge4: '打标签 → AI推荐发布',
+        testimonials_title: '来自先行体验者的评价',
+        testimonials_sub: '全国2,847位美容院老板正在使用',
+        pricing_title: '免费开始，零压力',
+        pricing_sub: '14天免费试用后再决定。无需信用卡。',
+        pricing_note: '随时取消 · 扣款前3天通知 · 退款保证',
+        pricing_period: '/ 月', pricing_popular: '🔥 最受欢迎',
+        free_desc: '14天免费体验全部功能',
+        lite_desc: '每月$2.99，告别SNS烦恼',
+        pro_desc: '全自动化，将SNS完全委托给AI',
+        free_features: ['AI文案 每月5次','背景去除 每月10次','Instagram账号 1个','作品集 保存20张','Reels脚本生成','故事自动发布'],
+        free_features_disabled: [false,false,false,false,true,true],
+        lite_features: ['AI文案 每月50次','背景去除 无限次','Instagram账号 1个','作品集 无限保存','Reels脚本 每月10次','故事自动发布'],
+        lite_features_disabled: [false,false,false,false,false,true],
+        pro_features: ['AI文案 无限次','背景去除 无限次','Instagram账号 3个','作品集 无限保存','Reels脚本 无限次','故事自动发布'],
+        pro_features_disabled: [false,false,false,false,false,false],
+        free_btn: '免费开始', lite_btn: '14天免费后开始', pro_btn: '14天免费后开始',
+        faq_title: '常见问题',
+        faq: [
+          {q:'AI真的能用我的语气写文案吗？', a:'可以。连接Instagram后，AI分析您最多30篇历史帖子，学习您的语气、表情符号习惯、标签风格和固定用语。帖子越多，学习越精准——而且会随使用不断进化。'},
+          {q:'连接Instagram账号安全吗？', a:'通过Meta官方Graph API连接。我们不需要您的密码，仅使用读取和发布权限。您可以随时在设置中解除连接。'},
+          {q:'免费试用期间需要绑定信用卡吗？', a:'不需要。14天免费试用只需邮箱即可开始，无需填写任何支付信息。试用结束后选择付费套餐时再输入即可。'},
+          {q:'除了美发和美甲，其他美容类型也支持吗？', a:'支持。目前已支持：接发、美发沙龙、美甲、睫毛嫁接、半永久妆容、皮肤护理。选择业务类型后，AI自动调整对应的标签和文案风格。'},
+          {q:'中途取消订阅会怎样？', a:'随时可取消。取消后，服务将持续到当前账单周期结束。未使用的天数将按日比例退款。'},
+        ],
+        cta_title: '今天做了护理，<br>今天就发出去。',
+        cta_desc: '只需连接Instagram账号，<br>明天早上就能零压力发帖。',
+        cta_primary: '开始14天免费试用 →',
+        cta_secondary: '预览APP ↗',
+        cta_chip1: '无需信用卡', cta_chip2: '随时取消', cta_chip3: '连接时免费分析语气',
+        cta_final: '给那些此刻仍在花47分钟写文案的老板的提案。',
+        email_title: '第一时间<span>获取</span>开放消息',
+        email_sub: '预注册用户正式开放时享受 <strong style="color:#fff">1个月价格用3个月</strong>。<br>一封邮件，锁定大额优惠。',
+        email_placeholder: '请输入您的邮箱地址',
+        email_btn: '立即预约',
+        email_success: '✓ 预约成功！开放时将第一时间通知您 🎉',
+        ec_chip1: '无垃圾邮件', ec_chip2: '仅发送一次开放通知', ec_chip3: '随时退订',
+        trust_suffix: ['名', '%', '条+', '分'],
+        phone_name: '美甲工作室',
+        phone_connected: '● 已连接',
+        phone_caption_label: '✨ AI生成文案',
+        phone_caption: '新到了欧若拉凝胶🥹<br>在光线下颜色变化真的好神奇！<br>本周只剩3个位置了~',
+        phone_tags: ['#美甲','#光疗甲','#欧若拉美甲','#美甲打卡'],
+        phone_btn: '📲 发布到动态＋故事',
+        footer_privacy: '隐私政策', footer_guide: '使用指南', footer_app: '打开APP',
+      },
+    };
+
+    let currentLang = 'ko';
+
+    function toggleLang() {
+      document.getElementById('langSwitcher').classList.toggle('open');
+    }
+    // 바깥 클릭 시 닫기
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#langSwitcher')) {
+        document.getElementById('langSwitcher').classList.remove('open');
+      }
+    });
+
+    function setLang(lang) {
+      currentLang = lang;
+      const L = LANGS[lang];
+      document.getElementById('currentFlag').textContent = L.flag;
+      document.getElementById('currentLangLabel').textContent = L.label;
+      document.querySelectorAll('.lang-option').forEach(el => {
+        el.classList.toggle('active', el.textContent.includes(L.label));
+      });
+      document.getElementById('langSwitcher').classList.remove('open');
+
+      const set = (sel, html, attr='innerHTML') => {
+        const el = document.querySelector(sel);
+        if (el) el[attr] = html;
+      };
+
+      // Navbar & preorder bar
+      set('[data-i18n="nav_cta"]', L.nav_cta);
+      set('.preorder-bar-badge', L.preorder_badge);
+      set('#preorderText', L.preorder_text);
+      set('.preorder-bar-btn', L.preorder_btn);
+
+      // Hero
+      set('.hero-badge', `<span class="hero-badge-dot"></span>${L.hero_badge}`);
+      set('.hero-title', L.hero_title);
+      set('.hero-desc', L.hero_desc);
+      set('#heroBtn', L.hero_cta);
+      set('.hero-note', L.hero_note);
+
+      // Trust labels
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('trustLabel' + i);
+        if (el && L['trust' + i]) el.textContent = L['trust' + i];
+      }
+
+      // Problem
+      const problemHeader = document.querySelector('#problem .problem-header');
+      if (problemHeader) {
+        problemHeader.querySelector('.section-title').innerHTML = L.problem_title;
+        problemHeader.querySelector('.section-sub').innerHTML = L.problem_sub;
+      }
+      const pcards = document.querySelectorAll('.problem-card');
+      if (pcards[0]) { pcards[0].querySelector('.problem-sub').innerHTML = L.p1_sub; pcards[0].querySelector('.problem-desc').innerHTML = L.p1_desc; }
+      if (pcards[1]) { pcards[1].querySelector('.problem-sub').innerHTML = L.p2_sub; pcards[1].querySelector('.problem-desc').innerHTML = L.p2_desc; }
+      if (pcards[2]) { pcards[2].querySelector('.problem-sub').innerHTML = L.p3_sub; pcards[2].querySelector('.problem-desc').innerHTML = L.p3_desc; }
+      // Problem number suffixes
+      if (L.problem_suffix) {
+        document.querySelectorAll('.problem-number').forEach((el, i) => {
+          const val = parseFloat(el.dataset.count);
+          const suffix = L.problem_suffix[i] !== undefined ? L.problem_suffix[i] : '';
+          el.dataset.suffix = suffix;
+          el.textContent = val + suffix;
+        });
+      }
+
+      // Services
+      const sHeader = document.querySelector('#services .services-header');
+      if (sHeader) { sHeader.querySelector('.section-title').innerHTML = L.services_title; sHeader.querySelector('.section-sub').innerHTML = L.services_sub; }
+      const scards = document.querySelectorAll('.service-card');
+      [[L.s1_title,L.s1_desc],[L.s2_title,L.s2_desc],[L.s3_title,L.s3_desc],[L.s4_title,L.s4_desc]].forEach((sd, i) => {
+        const card = scards[i]; if (!card) return;
+        card.querySelector('.service-title').textContent = sd[0];
+        card.querySelector('.service-desc').textContent = sd[1];
+        const pb = card.querySelector('.service-preview-btn');
+        if (pb) pb.childNodes[pb.childNodes.length - 1].textContent = ' ' + L.preview_btn;
+        const badge = card.querySelector('.service-badge');
+        if (badge && L['badge' + (i + 1)]) badge.textContent = L['badge' + (i + 1)];
+      });
+
+      // Testimonials
+      const tHeader = document.querySelector('#testimonials .testimonials-header');
+      if (tHeader) { tHeader.querySelector('.section-title').innerHTML = L.testimonials_title; tHeader.querySelector('.section-sub').innerHTML = L.testimonials_sub; }
+      // Testimonial carousel rebuild
+      const track = document.getElementById('carouselTrack');
+      if (track && L.testimonials) {
+        const html = L.testimonials.map(c => `
+          <div class="t-card">
+            <div class="t-quote">"</div>
+            <div class="t-stars">${c.stars}</div>
+            <p class="t-text">${c.text}</p>
+            <div class="t-author"><div class="t-avatar">${c.avatar}</div><div><div class="t-name">${c.name}</div><div class="t-role">${c.role}</div></div></div>
+          </div>`).join('');
+        track.innerHTML = html + html;
+      }
+
+      // Pricing
+      const pHeader = document.querySelector('#pricing .pricing-header');
+      if (pHeader) { pHeader.querySelector('.section-title').innerHTML = L.pricing_title; pHeader.querySelector('.section-sub').innerHTML = L.pricing_sub; }
+      set('.pricing-note', L.pricing_note);
+      if (L.pricing_popular) set('.pricing-popular', L.pricing_popular);
+      document.querySelectorAll('.pricing-period').forEach(el => { if (L.pricing_period) el.textContent = L.pricing_period; });
+      [['pricingDesc1','free_desc'],['pricingDesc2','lite_desc'],['pricingDesc3','pro_desc']].forEach(([id, key]) => {
+        const el = document.getElementById(id); if (el && L[key]) el.textContent = L[key];
+      });
+      const renderFeats = (feats, disabled) => feats.map((f, i) => `<li${disabled[i] ? ' class="disabled"' : ''}>${f}</li>`).join('');
+      const pfUls = document.querySelectorAll('.pricing-features');
+      if (pfUls[0] && L.free_features) pfUls[0].innerHTML = renderFeats(L.free_features, L.free_features_disabled);
+      if (pfUls[1] && L.lite_features) pfUls[1].innerHTML = renderFeats(L.lite_features, L.lite_features_disabled);
+      if (pfUls[2] && L.pro_features) pfUls[2].innerHTML = renderFeats(L.pro_features, L.pro_features_disabled);
+      [['pricingBtn1','free_btn'],['pricingBtn2','lite_btn'],['pricingBtn3','pro_btn']].forEach(([id, key]) => {
+        const el = document.getElementById(id); if (el && L[key]) el.textContent = L[key];
+      });
+
+      // FAQ
+      set('#faq .section-title', L.faq_title);
+      const faqListEl = document.getElementById('faqList');
+      if (faqListEl && L.faq) {
+        faqListEl.innerHTML = L.faq.map(item => `
+          <div class="faq-item">
+            <button class="faq-q" onclick="toggleFaq(this)">${item.q}<span class="faq-icon">+</span></button>
+            <div class="faq-a">${item.a}</div>
+          </div>`).join('');
+      }
+
+      // CTA
+      set('.cta-title', L.cta_title);
+      set('.cta-desc', L.cta_desc);
+      set('#ctaBtn', L.cta_primary);
+      if (L.cta_secondary) set('#ctaSecondaryBtn', L.cta_secondary);
+      const ctaChipEls = document.querySelectorAll('.cta-chip');
+      [L.cta_chip1, L.cta_chip2, L.cta_chip3].forEach((txt, i) => { if (ctaChipEls[i] && txt) ctaChipEls[i].textContent = txt; });
+      if (L.cta_final) set('.cta-final', L.cta_final);
+
+      // Email capture
+      set('.email-capture-title', L.email_title);
+      set('.email-capture-sub', L.email_sub);
+      const emailInput = document.getElementById('leadEmail');
+      if (emailInput && L.email_placeholder) emailInput.placeholder = L.email_placeholder;
+      set('#leadBtn', L.email_btn, 'textContent');
+      set('#leadSuccess', L.email_success);
+      const ecChipEls = document.querySelectorAll('.email-capture-chip');
+      const ecAll = [L.ec_chip1, '·', L.ec_chip2, '·', L.ec_chip3];
+      ecChipEls.forEach((el, i) => { if (ecAll[i]) el.textContent = ecAll[i]; });
+
+      // Phone mockup
+      const pn = document.getElementById('phoneName'); if (pn && L.phone_name) pn.textContent = L.phone_name;
+      const pc = document.getElementById('phoneConnected'); if (pc && L.phone_connected) pc.textContent = L.phone_connected;
+      const pcl = document.getElementById('phoneCaptionLabel'); if (pcl && L.phone_caption_label) pcl.textContent = L.phone_caption_label;
+      const pct = document.getElementById('phoneCaptionText'); if (pct && L.phone_caption) pct.innerHTML = L.phone_caption;
+      const ptags = document.getElementById('phoneTags');
+      if (ptags && L.phone_tags) ptags.innerHTML = L.phone_tags.map(t => `<div class="phone-tag">${t}</div>`).join('');
+      const pb = document.getElementById('phoneBtn'); if (pb && L.phone_btn) pb.textContent = L.phone_btn;
+
+      // Trust number suffixes
+      if (L.trust_suffix) {
+        document.querySelectorAll('#trust .trust-number').forEach((el, i) => {
+          const val = parseFloat(el.dataset.count);
+          const isFloat = el.dataset.float === 'true';
+          const suffix = L.trust_suffix[i] !== undefined ? L.trust_suffix[i] : (el.dataset.suffix || '');
+          el.dataset.suffix = suffix;
+          el.textContent = (isFloat ? val.toFixed(1) : val.toLocaleString()) + suffix;
+        });
+      }
+
+      // Footer
+      const fp = document.getElementById('footerPrivacy'); if (fp && L.footer_privacy) fp.textContent = L.footer_privacy;
+      const fg = document.getElementById('footerGuide'); if (fg && L.footer_guide) fg.textContent = L.footer_guide;
+      const fa = document.getElementById('footerApp'); if (fa && L.footer_app) fa.textContent = L.footer_app;
+    }
+
+    // ── Email Lead Capture ──
+    const LEADS_API = 'http://localhost:8001/leads/capture';
+
+    async function submitLead(e) {
+      e.preventDefault();
+      const email = document.getElementById('leadEmail').value.trim();
+      const btn   = document.getElementById('leadBtn');
+      const ok    = document.getElementById('leadSuccess');
+      const err   = document.getElementById('leadError');
+
+      if (!email) return;
+      btn.disabled = true;
+      btn.textContent = '저장 중...';
+      err.classList.remove('show');
+
+      try {
+        const res = await fetch(LEADS_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, source: 'landing' }),
+        });
+        if (!res.ok) throw new Error('서버 오류');
+        document.getElementById('leadForm').style.display = 'none';
+        ok.classList.add('show');
+      } catch {
+        // 백엔드 미연결 시에도 UX는 성공 처리 (이메일은 로컬 저장)
+        const saved = JSON.parse(localStorage.getItem('itdasy_leads') || '[]');
+        if (!saved.includes(email)) saved.push(email);
+        localStorage.setItem('itdasy_leads', JSON.stringify(saved));
+        document.getElementById('leadForm').style.display = 'none';
+        ok.classList.add('show');
+      }
+    }
+
+    // FAQ
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+GEMINI_API_KEY=AIzaSyDFxm3B7qA9j4kTMyFwl5l2TT6gk1CiZyQ
+REMOVEBG_API_KEY=L6yuw33x5sT5absn8n4nPZ1a
+META_APP_ID=
+META_APP_SECRET=
+META_REDIRECT_URI=http://localhost:8000/instagram/callback
+SECRET_KEY=itdasy-local-dev-secret
+HOST=0.0.0.0
+PORT=8000
+
+# Beauty Platform 브릿지
+BEAUTY_PLATFORM_URL=http://localhost:3001
+
+# GCS (선택 — 안 켜면 로컬 모드)
+CLOUD_STORAGE_ENABLED=false

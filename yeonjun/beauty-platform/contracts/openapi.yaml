@@ -1,0 +1,245 @@
+openapi: 3.1.0
+info:
+  title: Beauty Platform API
+  version: 0.1.0
+  description: |
+    원영님의 뷰티앱(React Native/Expo)과 연동되는 부가 플랫폼 API.
+    인증/결제/스토리지/AI 생성/컴플라이언스를 포함.
+servers:
+  - url: https://api.beauty-platform.example.com
+    description: Production
+  - url: https://staging-api.beauty-platform.example.com
+    description: Staging
+
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/auth/session:
+    get:
+      summary: 현재 세션 정보
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /v1/auth/revoke:
+    post:
+      summary: 현재 기기 세션 로그아웃
+      responses:
+        '204': { description: No Content }
+
+  /v1/profile:
+    get:
+      summary: 내 프로필 조회
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Profile' } } } }
+    patch:
+      summary: 프로필 수정 (PII는 서버에서 AES-256 GCM 암호화 저장)
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProfileUpdate' }
+      responses:
+        '200': { description: OK }
+
+  /v1/ai/generate-image:
+    post:
+      summary: AI 이미지 생성 (크레딧 차감 원자적)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GenerateImageRequest' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/GenerateImageResponse' } } } }
+        '402': { description: 크레딧 부족 / 구독 필요 }
+        '429': { description: Rate limited }
+
+  /v1/gallery:
+    get:
+      summary: 내 생성 이미지 목록
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, maximum: 100 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/GalleryPage' } } } }
+
+  /v1/gallery/{id}:
+    delete:
+      summary: 이미지 삭제 (DB 레코드 + R2 객체 원자적)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: No Content }
+
+  /v1/storage/presign:
+    post:
+      summary: R2 직접 업로드용 presigned URL 발급
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purpose, contentType]
+              properties:
+                purpose: { type: string, enum: [selfie, reference, avatar] }
+                contentType: { type: string, example: image/webp }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUrl: { type: string }
+                  objectKey: { type: string }
+                  expiresAt: { type: string, format: date-time }
+
+  /v1/billing/entitlements:
+    get:
+      summary: 현재 사용자 구독/크레딧 상태
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Entitlements' } } } }
+
+  /v1/billing/webhooks/revenuecat:
+    post:
+      summary: RevenueCat 웹훅 수신 (공유 시크릿 서명 검증)
+      security: []
+      responses:
+        '200': { description: OK }
+
+  /v1/billing/webhooks/portone:
+    post:
+      summary: 포트원 웹훅 수신 (서명 검증 + 영수증 재검증)
+      security: []
+      responses:
+        '200': { description: OK }
+
+  /v1/push/register:
+    post:
+      summary: FCM/APNs 토큰 등록
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, token]
+              properties:
+                platform: { type: string, enum: [ios, android] }
+                token: { type: string }
+      responses:
+        '204': { description: No Content }
+
+  /v1/account/export:
+    post:
+      summary: 내 데이터 내보내기 (PIPA 요구)
+      responses:
+        '202': { description: Accepted, content: { application/json: { schema: { type: object, properties: { jobId: { type: string } } } } } }
+
+  /v1/account:
+    delete:
+      summary: 계정 삭제 (30일 유예 후 완전 파기, 통신비밀보호법 로그 제외)
+      responses:
+        '202': { description: Accepted }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: 인증 필요
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: AUTH_REQUIRED }
+        message: { type: string }
+        traceId: { type: string }
+
+    Session:
+      type: object
+      properties:
+        userId: { type: string }
+        plan: { type: string, enum: [free, premium_monthly, premium_yearly] }
+        expiresAt: { type: string, format: date-time }
+
+    Profile:
+      type: object
+      properties:
+        userId: { type: string }
+        nickname: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        plan: { type: string }
+        creditsRemaining: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    ProfileUpdate:
+      type: object
+      properties:
+        nickname: { type: string, minLength: 2, maxLength: 20 }
+        phone: { type: string, description: "서버에서 AES-256 GCM 암호화 저장" }
+        realName: { type: string, description: "서버에서 AES-256 GCM 암호화 저장" }
+
+    GenerateImageRequest:
+      type: object
+      required: [prompt]
+      properties:
+        prompt: { type: string, minLength: 1, maxLength: 500 }
+        style:
+          type: string
+          enum: [natural, glam, vintage, kbeauty]
+          default: natural
+        referenceImageUrl: { type: string, nullable: true }
+
+    GenerateImageResponse:
+      type: object
+      properties:
+        generationId: { type: string }
+        imageUrl: { type: string }
+        thumbnailUrl: { type: string }
+        creditsRemaining: { type: integer }
+        latencyMs: { type: integer }
+
+    GalleryPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              imageUrl: { type: string }
+              thumbnailUrl: { type: string }
+              prompt: { type: string }
+              style: { type: string }
+              createdAt: { type: string, format: date-time }
+        nextCursor: { type: string, nullable: true }
+
+    Entitlements:
+      type: object
+      properties:
+        plan: { type: string, enum: [free, premium_monthly, premium_yearly] }
+        source: { type: string, enum: [revenuecat, portone, none] }
+        renewAt: { type: string, format: date-time, nullable: true }
+        creditsRemaining: { type: integer }
+        features:
+          type: array
+          items: { type: string }
