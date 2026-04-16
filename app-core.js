@@ -409,7 +409,6 @@ async function login() {
     checkCbt1Reset();
     checkOnboarding();
     checkInstaStatus(true); // 로그인 직후: 서버 shop_name으로 환영 처리
-    initToneController();
   } catch(e) {
     errEl.textContent = e.message;
     errEl.style.display = 'block';
@@ -437,7 +436,6 @@ window.addEventListener('load', function() {
     document.getElementById('lockOverlay').classList.add('hidden');
     checkCbt1Reset();
     checkOnboarding();
-    initToneController();
     checkInstaStatus().then(() => {
       // 인스타 OAuth 콜백 후 내 말투 자동 완성
       const params = new URLSearchParams(window.location.search);
