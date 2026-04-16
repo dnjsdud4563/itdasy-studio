@@ -1,5 +1,5 @@
 {
-  "version": "2026-04-15",
+  "version": "2026-04-16",
   "endpoints": {
     "PUT /persona/identity": {
       "request": {
@@ -145,21 +145,6 @@
             ],
             "default": null,
             "title": "Signature Vocab"
-          },
-          "taboo_phrases": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Taboo Phrases"
           },
           "personality_line": {
             "anyOf": [
@@ -324,20 +309,6 @@
             ],
             "title": "Signature Vocab"
           },
-          "taboo_phrases": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Taboo Phrases"
-          },
           "personality_line": {
             "anyOf": [
               {
@@ -381,7 +352,6 @@
           "location",
           "nicknames",
           "signature_vocab",
-          "taboo_phrases",
           "personality_line",
           "free_note",
           "created_at",
@@ -525,20 +495,6 @@
             ],
             "title": "Signature Vocab"
           },
-          "taboo_phrases": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Taboo Phrases"
-          },
           "personality_line": {
             "anyOf": [
               {
@@ -582,7 +538,6 @@
           "location",
           "nicknames",
           "signature_vocab",
-          "taboo_phrases",
           "personality_line",
           "free_note",
           "created_at",
@@ -1645,27 +1600,6 @@
         "type": "object"
       },
       "response": {
-        "$defs": {
-          "TabooFlag": {
-            "description": "금지 패턴 감지 결과.",
-            "properties": {
-              "category": {
-                "title": "Category",
-                "type": "string"
-              },
-              "pattern": {
-                "title": "Pattern",
-                "type": "string"
-              }
-            },
-            "required": [
-              "category",
-              "pattern"
-            ],
-            "title": "TabooFlag",
-            "type": "object"
-          }
-        },
         "description": "캡션 생성 응답.",
         "properties": {
           "caption": {
@@ -1678,14 +1612,6 @@
               "type": "integer"
             },
             "title": "Signature Block Ids Used",
-            "type": "array"
-          },
-          "taboo_flags": {
-            "default": [],
-            "items": {
-              "$ref": "#/$defs/TabooFlag"
-            },
-            "title": "Taboo Flags",
             "type": "array"
           },
           "cached_tokens": {
@@ -1955,25 +1881,6 @@
         "created_at"
       ],
       "title": "FewshotPostOut",
-      "type": "object"
-    },
-    "TabooFlag": {
-      "description": "금지 패턴 감지 결과.",
-      "properties": {
-        "category": {
-          "title": "Category",
-          "type": "string"
-        },
-        "pattern": {
-          "title": "Pattern",
-          "type": "string"
-        }
-      },
-      "required": [
-        "category",
-        "pattern"
-      ],
-      "title": "TabooFlag",
       "type": "object"
     },
     "CaptionOut": {

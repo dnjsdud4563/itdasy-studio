@@ -34,3 +34,8 @@ build/
 /backend/privacy_consent.log
 /backend/users/
 /backend/static/marketing/
+
+# Local-only (symlinks)
+CLAUDE.md
+ROADMAP.md
+연준-오류.md
