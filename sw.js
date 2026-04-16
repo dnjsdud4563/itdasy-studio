@@ -3,7 +3,7 @@
 //  CACHE_VERSION = 날짜(YYYYMMDD) + 빌드번호
 //  배포할 때마다 이 값만 올리면 구 캐시 자동 삭제
 // ─────────────────────────────────────────────
-const CACHE_VERSION = '20260416-phase1a';
+const CACHE_VERSION = '20260417-phase1a';
 const CACHE_NAME    = `itdasy-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
