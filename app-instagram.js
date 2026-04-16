@@ -184,6 +184,15 @@ async function runPersonaAnalyze() {
       // 분석 완료 팝업 자동 오픈
       renderDetailedPopup({ raw_analysis: raw, persona: p });
       document.getElementById('analyzeResultPopup').style.display = 'block';
+      // Phase 1-A: 분석완료 팝업 닫으면 말투검증 팝업 자동 오픈
+      const closeBtn = document.querySelector('#analyzeResultPopup button');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          if (window.openPersonaPopup) {
+            setTimeout(() => window.openPersonaPopup(), 300);
+          }
+        }, { once: true });
+      }
     }, 800);
 
   } catch(e) {

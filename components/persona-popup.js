@@ -185,12 +185,12 @@ function _renderStep1to3(signature) {
   sheet.appendChild(wrap);
 
   renderScenarioSelector(selectorArea, ({ combo_id, axes, special_context }) => {
-    _renderStep5(signature, axes, special_context);
+    _renderStep5(signature, combo_id, axes, special_context);
   });
 }
 
-// Step 5: Mock 캡션 3개 + 피드백 버튼
-function _renderStep5(signature, axes, special_context) {
+// Step 5: 캡션 3개 + 피드백 버튼 (실제 API, Mock fallback)
+function _renderStep5(signature, combo_id, axes, special_context) {
   const sheet = _getSheet();
   sheet.querySelectorAll('.pp-step').forEach(el => el.remove());
 
@@ -203,9 +203,22 @@ function _renderStep5(signature, axes, special_context) {
   wrap.appendChild(loading);
   sheet.appendChild(wrap);
 
-  // Mock 딜레이 (Phase 1-A-4에서 실제 API로 교체)
-  setTimeout(() => {
-    const captions = mockGenerateCaption(axes, special_context);
+  (async () => {
+    let captions;
+    try {
+      const res = await fetch(window.API + '/persona/analyze-tone', {
+        method: 'POST',
+        headers: { ...window.authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ axes, special_context })
+      });
+      if (!res.ok) throw new Error('analyze_fail');
+      const data = await res.json();
+      captions = data.variants;
+    } catch(e) {
+      console.warn('[persona-popup] API 실패, Mock 사용', e);
+      captions = mockGenerateCaption(axes, special_context);
+    }
+
     if (signature) captions.forEach((_, i) => { captions[i] += '\n\n' + signature; });
 
     wrap.innerHTML = '';
@@ -242,36 +255,34 @@ function _renderStep5(signature, axes, special_context) {
     const btnGood = document.createElement('button');
     btnGood.className = 'pp-act-btn primary';
     btnGood.textContent = '맘에 들어요';
-    btnGood.onclick = () => _renderStep6(captions[selectedIdx], axes);
+    btnGood.onclick = () => _renderStep6(captions[selectedIdx], selectedIdx, combo_id, captions, axes, special_context, false);
 
     const btnRetry = document.createElement('button');
     btnRetry.className = 'pp-act-btn';
     btnRetry.textContent = '다시 뽑아줘';
-    btnRetry.onclick = () => _renderStep5(signature, axes, special_context);
+    btnRetry.onclick = () => _renderStep5(signature, combo_id, axes, special_context);
 
     const btnEdit = document.createElement('button');
     btnEdit.className = 'pp-act-btn';
     btnEdit.textContent = '살짝 고칠래요';
-    btnEdit.onclick = () => _renderStep6(captions[selectedIdx], axes, true);
+    btnEdit.onclick = () => _renderStep6(captions[selectedIdx], selectedIdx, combo_id, captions, axes, special_context, true);
 
     actRow.appendChild(btnGood);
     actRow.appendChild(btnRetry);
     actRow.appendChild(btnEdit);
     wrap.appendChild(actRow);
 
-    // 하나도 안 고른 상태에서도 완전히 맘에 없을 때 처리
     const btnNone = document.createElement('button');
     btnNone.className = 'pp-btn pp-btn-ghost';
     btnNone.style.marginTop = '16px';
     btnNone.textContent = '다 별로예요, 다시 뽑아줘';
-    btnNone.onclick = () => _renderStep5(signature, axes, special_context);
+    btnNone.onclick = () => _renderStep5(signature, combo_id, axes, special_context);
     wrap.appendChild(btnNone);
-
-  }, 900);
+  })();
 }
 
-// Step 6: 선택적 톤 조절
-function _renderStep6(selectedCaption, axes, editMode = false) {
+// Step 6: 선택적 톤 조절 + 피드백 전송
+function _renderStep6(selectedCaption, selectedIdx, combo_id, captions, axes, special_context, editMode = false) {
   const sheet = _getSheet();
   sheet.querySelectorAll('.pp-step').forEach(el => el.remove());
 
@@ -289,10 +300,10 @@ function _renderStep6(selectedCaption, axes, editMode = false) {
   wrap.appendChild(sub);
 
   const TONES = [
-    { key: 'emoji',    label: '이모지 줄여줘' },
-    { key: 'longer',   label: '더 길게 써줘' },
-    { key: 'casual',   label: '더 친근하게' },
-    { key: 'formal',   label: '좀 더 격식있게' },
+    { key: 'emoji',  label: '이모지 줄여줘' },
+    { key: 'longer', label: '더 길게 써줘' },
+    { key: 'casual', label: '더 친근하게' },
+    { key: 'formal', label: '좀 더 격식있게' },
   ];
 
   const selected = new Set();
@@ -311,13 +322,14 @@ function _renderStep6(selectedCaption, axes, editMode = false) {
   });
   wrap.appendChild(toneRow);
 
+  let ta = null;
   if (editMode) {
     const editLabel = document.createElement('div');
     editLabel.style.cssText = 'font-size:13px;font-weight:600;color:#555;margin:14px 0 8px;';
     editLabel.textContent = '직접 수정해도 돼요';
     wrap.appendChild(editLabel);
 
-    const ta = document.createElement('textarea');
+    ta = document.createElement('textarea');
     ta.className = 'pp-signature-box';
     ta.style.cssText += 'width:100%;box-sizing:border-box;border:1.5px solid #e5e5e5;border-radius:12px;resize:none;outline:none;font-family:inherit;';
     ta.rows = 5;
@@ -325,14 +337,28 @@ function _renderStep6(selectedCaption, axes, editMode = false) {
     wrap.appendChild(ta);
   }
 
+  function _sendFeedback() {
+    fetch(window.API + '/persona/feedback', {
+      method: 'POST',
+      headers: { ...window.authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        combo_id,
+        axes,
+        special_context,
+        variants: captions,
+        selected_index: selectedIdx,
+        action: editMode ? 'edit' : 'good',
+        tone_tweaks: Array.from(selected),
+        edited_caption: editMode && ta ? ta.value : null
+      })
+    }).catch(e => console.warn('[persona-popup] 피드백 저장 실패', e));
+  }
+
   const btnDone = document.createElement('button');
   btnDone.className = 'pp-btn pp-btn-primary';
   btnDone.style.marginTop = '16px';
   btnDone.textContent = '완료!';
-  btnDone.onclick = () => {
-    // TODO(Phase 1-A-4): 피드백 신호 수집 → /persona/feedback 전송
-    _close();
-  };
+  btnDone.onclick = () => { _sendFeedback(); _close(); };
   wrap.appendChild(btnDone);
 
   const btnSkip = document.createElement('button');
@@ -360,4 +386,5 @@ function openPersonaPopup() {
   _renderStep0();
 }
 
+window.openPersonaPopup = openPersonaPopup;
 export { openPersonaPopup };
