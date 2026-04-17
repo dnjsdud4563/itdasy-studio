@@ -24,6 +24,12 @@ GitHub Pages: `https://dnjsdud4563.github.io/itdasy-studio/`
 
 ## 변경 이력
 
+### 2026-04-17
+- 서명 중복 제거: Step 5 캡션에서 서명 수동 추가 코드 삭제 (AI가 이미 처리)
+- 팝업 크기 확대: persona-popup 88vh → 92vh, 글씨 전체 1~2px 키움
+- 직접 작성 옵션: scenario-selector에 상황/손님/사진 각 축 "직접 작성" 추가
+- 커스텀 combo_id: 직접 작성 시 `custom_...` 형태로 동적 생성
+
 ### 2026-04-13
 - 모놀리식 `app.js` → 모듈 분리 (`app-core.js` 외 4개)
 - `analyzeResultPopup` div 중첩 버그 수정 → 피드글작성 / AI추천 / 포트폴리오 탭 미표시 해결
