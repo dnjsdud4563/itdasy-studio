@@ -684,3 +684,7 @@ if ('serviceWorker' in navigator) {
     });
   });
 })();
+
+// Module에서 접근 가능하도록 window에 노출
+window.API = API;
+window.authHeader = authHeader;
