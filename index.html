@@ -330,24 +330,22 @@
     <!-- 단일 작업 카드 -->
     <div style="background:#fff;border-radius:18px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;">
 
-      <!-- [상단] 사진 영역 -->
-      <div id="captionPhotoRow" style="padding:12px 14px;border-bottom:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;">사진</div>
-        <div id="captionPhotoThumbRow" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;align-items:center;min-height:80px;">
-          <div onclick="_captionOpenSlotPicker()" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text3);cursor:pointer;flex-shrink:0;">📷</div>
-        </div>
+      <!-- [상단] 시술 특징 태그 -->
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+        <label id="typeTagLabel" style="font-size:12px;font-weight:600;color:var(--text2);">시술 특징</label>
+        <div class="tag-row" id="typeTags" style="margin-top:6px;"></div>
       </div>
 
-      <!-- [중단 sticky] 컨트롤 바 -->
+      <!-- [만들기 버튼 sticky] -->
       <div id="captionCtrlBar" style="position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--border);padding:10px 14px;">
         <button id="captionBtn" onclick="generateCaption()" style="width:100%;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:14px;font-weight:800;cursor:pointer;">만들기 ✨</button>
       </div>
 
-      <!-- [하단] 캡션 편집 영역 (WYSIWYG) -->
+      <!-- [캡션 결과] -->
       <div style="padding:14px;">
         <textarea id="captionText"
           oninput="_capAutoGrow(this);_capSchedulePatch(this.value)"
-          placeholder="'다시 만들기 ✨'를 눌러 AI 캡션을 생성하세요"
+          placeholder="'만들기 ✨'를 눌러 AI 캡션을 생성하세요"
           style="width:100%;box-sizing:border-box;min-height:160px;padding:0;border:none;outline:none;font-family:'Pretendard',sans-serif;font-size:14px;line-height:1.8;color:var(--text);resize:none;background:transparent;overflow:hidden;display:block;"></textarea>
         <div id="captionEditMicro" style="display:none;font-size:11px;color:var(--text3);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
           <span>수정하면 자동 저장됩니다</span><span id="captionEditPct"></span>
@@ -356,14 +354,14 @@
           <button onclick="copyCaption()" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;">복사 📋</button>
         </div>
       </div>
-    </div>
 
-    <!-- 시술 정보 입력 카드 -->
-    <div style="background:#fff;border-radius:18px;border:1px solid var(--border);padding:14px 16px;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:10px;">시술 정보</div>
-      <label id="typeTagLabel" style="font-size:12px;font-weight:600;color:var(--text2);">시술 특징</label>
-      <div class="tag-row" id="typeTags" style="margin-top:6px;"></div>
-      <div id="captionScenarioArea" style="margin-top:14px;"></div>
+      <!-- [하단] 사진 선택 (선택사항) -->
+      <div id="captionPhotoRow" style="padding:12px 14px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:8px;">사진 (선택)</div>
+        <div id="captionPhotoThumbRow" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;align-items:center;min-height:80px;">
+          <div onclick="_captionOpenSlotPicker()" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text3);cursor:pointer;flex-shrink:0;">📷</div>
+        </div>
+      </div>
     </div>
 
     <!-- 캡션 완료 후 행동유도 (동적 렌더링) -->

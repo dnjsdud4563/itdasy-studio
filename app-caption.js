@@ -422,22 +422,8 @@ function renderCaptionKeywordTags() {
   container.innerHTML = keywords.map(k =>
     `<span class="tag" data-v="${k}" onclick="toggleCaptionTag(this)">${k}<button class="tag-delete" onclick="deleteCaptionKeyword('${k}',event)">×</button></span>`
   ).join('') + `<span class="tag tag-add" onclick="showAddKeywordInput()">+ 추가</span>`;
-
-  // scenario-selector 마운트 (탭 진입 시 최초 1회)
-  _initCaptionScenario();
 }
 
-// scenario-selector 마운트 (글쓰기 탭 진입 시)
-function _initCaptionScenario() {
-  const area = document.getElementById('captionScenarioArea');
-  if (!area || !window.renderScenarioSelector) return;
-  // 이미 마운트된 경우 재초기화하지 않음
-  if (area.dataset.mounted === '1') return;
-  area.dataset.mounted = '1';
-  window.renderScenarioSelector(area, (result) => {
-    window._captionScenarioResult = result;
-  });
-}
 
 function toggleCaptionTag(el) {
   if (el.classList.contains('tag-add')) return;
@@ -496,16 +482,66 @@ const _CAP_ERR_MSG = {
   'fingerprint_missing': '포스트가 5개 이상 필요합니다. 인스타 연동에서 포스트를 더 불러와주세요.',
 };
 
-async function generateCaption() {
-  const types = getSel('typeTags');
+function generateCaption() {
+  openCaptionScenarioPopup();
+}
 
+// 시나리오 선택 바텀시트 팝업
+function openCaptionScenarioPopup() {
+  if (typeof window.renderScenarioSelector !== 'function') {
+    showToast('잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;animation:pp-bg-in .2s ease;';
+
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'width:100%;max-width:480px;background:#fff;border-radius:24px 24px 0 0;padding:24px 20px 36px;box-sizing:border-box;max-height:88vh;overflow-y:auto;animation:pp-sheet-in .22s cubic-bezier(.32,1.1,.68,1);';
+
+  const handle = document.createElement('div');
+  handle.style.cssText = 'width:36px;height:4px;background:#e0e0e0;border-radius:2px;margin:0 auto 20px;';
+  sheet.appendChild(handle);
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:17px;font-weight:800;color:#1a1a1a;margin-bottom:16px;';
+  title.textContent = '어떤 상황이에요?';
+  sheet.appendChild(title);
+
+  const selectorWrap = document.createElement('div');
+  sheet.appendChild(selectorWrap);
+
+  overlay.appendChild(sheet);
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) _closeCaptionScenarioPopup(overlay);
+  });
+
+  window.renderScenarioSelector(selectorWrap, async (result) => {
+    selectorWrap.innerHTML = '<div style="text-align:center;padding:32px 0;color:#aaa;font-size:14px;">캡션 만드는 중 ✨</div>';
+    title.textContent = '잠깐만요!';
+    await _doGenerateCaption(result, () => _closeCaptionScenarioPopup(overlay));
+  });
+}
+
+function _closeCaptionScenarioPopup(overlay) {
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity .15s';
+  setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 160);
   const btn = document.getElementById('captionBtn');
-  btn.disabled = true;
+  if (btn) { btn.innerHTML = '만들기 ✨'; btn.disabled = false; }
+}
+
+async function _doGenerateCaption(scenario, closePopup) {
+  const btn = document.getElementById('captionBtn');
+  if (btn) btn.disabled = true;
 
   showCaptionLoader();
 
   const shopType = localStorage.getItem('shop_type') || '붙임머리';
   const cfg = SHOP_CONFIG[shopType] || SHOP_CONFIG['붙임머리'];
+  const types = getSel('typeTags');
   const typeStr = types.length > 0 ? types.join(', ') : cfg.defaultTag;
 
   // 작업실 슬롯 연결 정보
@@ -513,22 +549,18 @@ async function generateCaption() {
     ? (() => { const s = _slots.find(sl => sl.id === _captionSlotId); return s ? `손님: ${s.label}. 사진 ${s.photos.filter(p=>!p.hidden).length}장. ` : ''; })()
     : '';
 
-  // scenario-selector 결과 사용
-  const scenario    = window._captionScenarioResult || {};
-  const axesText    = scenario.axes
-    ? `${scenario.axes.customer} 손님. ${scenario.axes.situation}. ${scenario.axes.photo}.`
+  const axes = (scenario && scenario.axes) ? scenario.axes : {};
+  const axesText = axes.customer
+    ? `${axes.customer} 손님. ${axes.situation}. ${axes.photo}.`
     : '';
-  const specialText = scenario.special_context || '';
+  const specialText = (scenario && scenario.special_context) ? scenario.special_context : '';
 
-  // payload 구성
   const category      = _CAP_CAT_MAP[shopType] || 'extension';
   const photo_context = `${shopType} 시술. ${cfg.tagLabel}: ${typeStr}. ${slotNote}${axesText} ${specialText}`.trim();
   const length_tier   = 'medium';
   const tone_override = 'normal';
 
   const payload = { category, photo_context, length_tier, tone_override };
-
-  // spec validator
   if (typeof window._assertSpec === 'function') window._assertSpec('POST /persona/generate', payload);
 
   try {
@@ -539,15 +571,14 @@ async function generateCaption() {
       const code = data.code || data.detail || '';
       const msg = _CAP_ERR_MSG[code] || '캡션 생성에 실패했습니다. 다시 시도해주세요.';
       hideCaptionLoader(false, () => {
+        closePopup();
         showToast(msg);
-        btn.innerHTML = '만들기 ✨';
-        btn.disabled = false;
       });
       return;
     }
 
     const finalCaption = data.caption || '';
-    const hashes = ''; // TD-020: POST /persona/generate 해시태그 미반환 — 추후 추가 예정
+    const hashes = ''; // TD-020: 해시태그 미반환 — 추후 추가 예정
 
     // TD-022: 응답에 log_id 없음 — 백엔드 GenerateResponse에 log_id 필드 추가 필요
     if (data.log_id) {
@@ -567,18 +598,16 @@ async function generateCaption() {
       console.warn('[WIRING-MISMATCH] tone_override sent:', tone_override, '/ server used:', respTO);
     console.log('[WIRING] sent:', { length_tier, tone_override }, '| resp:', { length_tier: respLT, used_tone: respTO });
 
-    // 슬롯머신 마지막 릴 잠금 후 결과를 WYSIWYG textarea에 직접 주입
     hideCaptionLoader(true, () => {
+      closePopup();
       const ta = document.getElementById('captionText');
       ta.value = finalCaption;
       _capAutoGrow(ta);
       document.getElementById('captionHash').value = hashes;
 
-      // 수정 마이크로카피 표시
       const micro = document.getElementById('captionEditMicro');
       if (micro) micro.style.display = _lastLogId ? 'flex' : 'none';
 
-      // 저장된 캡션 데이터를 슬롯에 연결
       if (typeof _captionSlotId !== 'undefined' && _captionSlotId && typeof _slots !== 'undefined') {
         const slot = _slots.find(s => s.id === _captionSlotId);
         if (slot) {
@@ -588,18 +617,14 @@ async function generateCaption() {
         }
       }
 
-      // 액션바 렌더링
       _renderCaptionActionBar(finalCaption, hashes);
-      btn.innerHTML = '만들기 ✨';
-      btn.disabled = false;
+      if (btn) { btn.innerHTML = '만들기 ✨'; btn.disabled = false; }
     });
-    return; // btn 복원은 onClose 콜백에서 처리
   } catch(e) {
     if (e.message === '401') return; // _personaFetch가 401 처리
     hideCaptionLoader(false, () => {
+      closePopup();
       showToast('일시적 오류. 다시 시도해주세요.');
-      btn.innerHTML = '만들기 ✨';
-      btn.disabled = false;
     });
   }
 }
@@ -964,13 +989,6 @@ function _renderCaptionActionBar(caption, hashtags) {
 function goToNextSlotCaption(slotId) {
   if (typeof loadSlotForCaption === 'function') {
     loadSlotForCaption(slotId);
-  }
-  // scenario 선택 초기화 (다음 손님은 다시 고르도록)
-  window._captionScenarioResult = null;
-  const area = document.getElementById('captionScenarioArea');
-  if (area) {
-    area.dataset.mounted = '';
-    _initCaptionScenario();
   }
   const ta = document.getElementById('captionText');
   if (ta) { ta.value = ''; _capAutoGrow(ta); }
