@@ -162,19 +162,19 @@ function renderScenarioSelector(container, onComplete) {
 
     const label = document.createElement('div');
     label.className = 'ss-special-label';
-    label.textContent = '특별히 남길 말 있어요? (선택)';
+    label.textContent = '상황을 직접 써도 돼요 (선택)';
     step.appendChild(label);
 
     const hint = document.createElement('div');
     hint.className = 'ss-special-hint';
-    hint.textContent = '예: 봄 신메뉴 시술이에요 / 10회 단골 손님이세요';
+    hint.textContent = '예: 일본에서 오신 손님 / 결혼식 앞두고 오셨어요 / 타샵에서 망하고 다시 오셨어요';
     step.appendChild(hint);
 
     const ta = document.createElement('textarea');
     ta.className = 'ss-special-ta';
     ta.rows = 3;
     ta.maxLength = 200;
-    ta.placeholder = '없으면 그냥 넘어가도 돼요';
+    ta.placeholder = '없으면 비워두고 완료 눌러주세요';
     step.appendChild(ta);
 
     const btn = document.createElement('button');

@@ -24,16 +24,59 @@ import { renderScenarioSelector } from './scenario-selector.js';
  * TODO(Phase 1-A-4): 실제 API로 교체
  */
 function mockGenerateCaption(axes, special_context) {
-  const situationText = axes.situation === '시술완성' ? '시술이 완성됐어요' : '후기 감사해요';
-  const customerText  = axes.customer  === '신규'    ? '처음 오신 손님' : '오랫동안 찾아주신 단골 손님';
-  const photoText     = axes.photo     === '완성샷'   ? '완성된 모습' : '전후 변화';
-  const extra = special_context ? `\n${special_context}` : '';
+  const isComplete = axes.situation === '시술완성';
+  const isNew      = axes.customer  === '신규';
+  const isPhoto    = axes.photo     === '완성샷';
 
-  return [
-    `오늘도 ${customerText}께 ${situationText} ✨\n${photoText}을 담았어요.${extra}\n#잇데이 #네일아트`,
-    `${customerText}과 함께한 오늘 💕\n${situationText}! ${photoText}이 너무 예쁘게 나왔어요.${extra}`,
-    `${situationText} 기념으로 ${photoText} 남겨요 🎉\n${customerText}이라 더 특별했어요.${extra}\n#네일`,
-  ];
+  // special_context를 문맥에 맞게 자연스럽게 변환
+  function _weaveExtra(ctx) {
+    if (!ctx) return '';
+    // 간단 패턴 치환 (자연어 형태로)
+    const normalized = ctx
+      .replace(/일본에서 오신/, '일본에서 찾아와 주신')
+      .replace(/결혼식 앞두고/, '결혼을 앞두고')
+      .replace(/타샵에서 망하고/, '다른 곳에서 아쉬운 경험 후')
+      .replace(/10회 단골/, '10번이나 찾아주신')
+      .trim();
+    return normalized;
+  }
+
+  const extra = _weaveExtra(special_context);
+
+  // 랜덤 요소 풀
+  const EMOJIS_WARM  = ['🌸', '💕', '🥰', '✨', '💗'];
+  const EMOJIS_COOL  = ['🎉', '💫', '🤍', '🙌', '😊'];
+  const ENDINGS_SOFT = ['이에요', '예요', '했어요', '드렸어요'];
+  const ENDINGS_FIRM = ['했습니다', '드렸습니다', '완성됐습니다', '마무리했어요'];
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // 상황별 문구 풀 (랜덤 선택)
+  const situationPool = isComplete
+    ? ['시술이 완성', '오늘 시술도 마무리', '작업이 완성']
+    : ['후기 감사', '소중한 리뷰 감사', '따뜻한 후기'];
+  const customerPool = isNew
+    ? ['처음 찾아주신 손님', '새로 인연이 된 손님', '첫 방문 손님']
+    : ['오랫동안 찾아주신 손님', '자주 와주시는 단골 손님', '믿고 맡겨주시는 손님'];
+  const photoPool = isPhoto
+    ? ['완성된 모습', '마무리 사진', '완성샷']
+    : ['변화 전후', '전후 사진', '비포애프터'];
+
+  const situation = pick(situationPool);
+  const customer  = pick(customerPool);
+  const photo     = pick(photoPool);
+
+  // extra 삽입 위치 결정
+  const extraInline = extra ? ` ${extra}께` : '';
+  const extraMid    = extra ? `\n${extra}이라 더욱 특별했어요.` : '';
+  const extraEnd    = extra ? `\n${extra}, 감사해요!` : '';
+
+  // 3개 캡션 — 톤/구성 확실히 다르게
+  const c1 = `${customer}${extraInline} ${situation}${pick(ENDINGS_SOFT)} ${pick(EMOJIS_WARM)}\n${photo}으로 담아봤어요.`;
+  const c2 = `오늘도 좋은 인연이었어요 ${pick(EMOJIS_WARM)}\n${customer}과 함께한 ${situation}!${extraMid}`;
+  const c3 = `${situation} 기념으로 ${photo} 남겨요 ${pick(EMOJIS_COOL)}\n${customer}이라 더 뿌듯했어요.${extraEnd}`;
+
+  return [c1, c2, c3];
 }
 
 /* ─────────────────────────────────────────────
@@ -278,12 +321,12 @@ function _renderStep1to3(signature) {
 
   const title = document.createElement('div');
   title.className = 'pp-title';
-  title.textContent = '어떤 글을 써볼까요?';
+  title.textContent = '상황 하나만 골라주세요';
   wrap.appendChild(title);
 
   const sub = document.createElement('div');
   sub.className = 'pp-sub';
-  sub.textContent = '세 가지만 탁탁 골라주세요. 금방 끝나요!';
+  sub.textContent = '이 상황을 가정해서 원장님 말투로 글을 써볼게요!';
   wrap.appendChild(sub);
 
   const selectorArea = document.createElement('div');
@@ -339,12 +382,12 @@ function _renderStep5(signature, combo_id, axes, special_context) {
 
     const title = document.createElement('div');
     title.className = 'pp-title';
-    title.textContent = '이 중에 말투가 자연스러운 게 있나요?';
+    title.textContent = '원장님 말투로 만들어 봤어요!';
     wrap.appendChild(title);
 
     const sub = document.createElement('div');
     sub.className = 'pp-sub';
-    sub.textContent = '아직 내용이 아닌 말투만 봐주세요.';
+    sub.textContent = '방금 고르신 상황을 가정해서 쓴 글이에요. 어떤 게 원장님 말투에 가까울까요?';
     wrap.appendChild(sub);
 
     let selectedIdx = -1;
