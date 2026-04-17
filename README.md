@@ -25,6 +25,9 @@ GitHub Pages: `https://dnjsdud4563.github.io/itdasy-studio/`
 ## 변경 이력
 
 ### 2026-04-17
+- app-gallery.js 분할: 죽은 코드 14개 삭제 후 bg/element/review/write/finish 5개 파일로 분리
+- 배경 누끼: 클라이언트(@imgly/background-removal) 우선, 서버 폴백으로 전환
+- 리뷰스티커: 스마트 크롭 + 텍스트만 추출 버튼 추가, 투명도 슬라이더 제거
 - 서명 중복 제거: Step 5 캡션에서 서명 수동 추가 코드 삭제 (AI가 이미 처리)
 - 팝업 크기 확대: persona-popup 88vh → 92vh, 글씨 전체 1~2px 키움
 - 직접 작성 옵션: scenario-selector에 상황/손님/사진 각 축 "직접 작성" 추가
