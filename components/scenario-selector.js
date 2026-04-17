@@ -19,20 +19,20 @@ const SCENARIO_CARDS = [
 ];
 
 const AXES_CONFIG = [
-  { key: 'situation', question: '오늘 어떤 상황이에요?', options: ['시술완성', '후기감사'] },
-  { key: 'customer',  question: '손님은 어떤 분이에요?', options: ['신규', '단골'] },
-  { key: 'photo',     question: '사진 종류는요?',        options: ['완성샷', '전후비교'] },
+  { key: 'situation', question: '오늘 어떤 상황이에요?', options: ['시술완성', '후기감사', '직접 작성'] },
+  { key: 'customer',  question: '손님은 어떤 분이에요?', options: ['신규', '단골', '직접 작성'] },
+  { key: 'photo',     question: '사진 종류는요?',        options: ['완성샷', '전후비교', '직접 작성'] },
 ];
 
 const SS_CSS = `
 .ss-wrap { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif; }
 .ss-step { animation: ss-fadein .18s ease; }
 @keyframes ss-fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-.ss-q { font-size:15px; font-weight:700; color:#1a1a1a; margin-bottom:14px; line-height:1.4; }
+.ss-q { font-size:16px; font-weight:700; color:#1a1a1a; margin-bottom:14px; line-height:1.4; }
 .ss-chips { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
 .ss-chip {
-  flex:1; min-width:100px; padding:13px 10px; border-radius:14px; border:1.5px solid #e5e5e5;
-  background:#fff; font-size:14px; font-weight:600; color:#333; cursor:pointer;
+  flex:1; min-width:100px; padding:15px 12px; border-radius:14px; border:1.5px solid #e5e5e5;
+  background:#fff; font-size:15px; font-weight:600; color:#333; cursor:pointer;
   text-align:center; transition:border-color .12s, background .12s, color .12s;
 }
 .ss-chip:hover { border-color:#aaa; }
@@ -41,17 +41,17 @@ const SS_CSS = `
 .ss-dot { width:7px; height:7px; border-radius:50%; background:#e5e5e5; transition:background .15s; }
 .ss-dot.done { background:#1a1a1a; }
 .ss-dot.active { background:#666; }
-.ss-special-label { font-size:13px; font-weight:600; color:#555; margin-bottom:8px; }
+.ss-special-label { font-size:14px; font-weight:600; color:#555; margin-bottom:8px; }
 .ss-special-hint { font-size:12px; color:#aaa; margin-bottom:8px; }
 .ss-special-ta {
   width:100%; box-sizing:border-box; border:1.5px solid #e5e5e5; border-radius:12px;
-  padding:11px 13px; font-size:13px; color:#1a1a1a; resize:none; outline:none;
+  padding:13px 15px; font-size:14px; color:#1a1a1a; resize:none; outline:none;
   font-family:inherit; transition:border-color .12s;
 }
 .ss-special-ta:focus { border-color:#aaa; }
 .ss-confirm-btn {
-  width:100%; margin-top:16px; padding:14px; border-radius:14px; border:none;
-  background:#1a1a1a; color:#fff; font-size:15px; font-weight:700; cursor:pointer;
+  width:100%; margin-top:16px; padding:16px; border-radius:14px; border:none;
+  background:#1a1a1a; color:#fff; font-size:16px; font-weight:700; cursor:pointer;
   transition:opacity .12s;
 }
 .ss-confirm-btn:active { opacity:.75; }
@@ -134,19 +134,61 @@ function renderScenarioSelector(container, onComplete) {
     const chips = document.createElement('div');
     chips.className = 'ss-chips';
 
+    // Custom input area (hidden initially)
+    const customArea = document.createElement('div');
+    customArea.style.cssText = 'display:none; margin-top:12px;';
+
+    const customInput = document.createElement('input');
+    customInput.type = 'text';
+    customInput.className = 'ss-special-ta';
+    customInput.style.cssText = 'width:100%; box-sizing:border-box;';
+    customInput.placeholder = '직접 입력해주세요';
+    customInput.maxLength = 50;
+
+    const customBtn = document.createElement('button');
+    customBtn.className = 'ss-confirm-btn';
+    customBtn.style.cssText = 'margin-top:10px; padding:12px;';
+    customBtn.textContent = '확인';
+
+    customArea.appendChild(customInput);
+    customArea.appendChild(customBtn);
+
     cfg.options.forEach(opt => {
       const chip = document.createElement('button');
       chip.className = 'ss-chip' + (state[cfg.key] === opt ? ' selected' : '');
       chip.textContent = opt;
       chip.onclick = () => {
-        state[cfg.key] = opt;
-        currentStep++;
-        render();
+        if (opt === '직접 작성') {
+          // Show custom input, highlight chip
+          document.querySelectorAll('.ss-chip').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+          customArea.style.display = 'block';
+          customInput.focus();
+        } else {
+          state[cfg.key] = opt;
+          currentStep++;
+          render();
+        }
       };
       chips.appendChild(chip);
     });
 
     step.appendChild(chips);
+    step.appendChild(customArea);
+
+    // Custom input confirm handler
+    const confirmCustom = () => {
+      const val = customInput.value.trim();
+      if (!val) return;
+      state[cfg.key] = val; // Store the custom text as the axis value
+      currentStep++;
+      render();
+    };
+    customBtn.onclick = confirmCustom;
+    customInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmCustom();
+    });
+
     wrap.appendChild(step);
   }
 
@@ -183,8 +225,9 @@ function renderScenarioSelector(container, onComplete) {
     btn.onclick = () => {
       const special_context = ta.value.trim();
       const card = _findCard(state);
-      if (!card) return; // 방어
-      onComplete({ combo_id: card.combo_id, axes: { ...state }, special_context });
+      // If no matching card (custom values), generate a dynamic combo_id
+      const combo_id = card ? card.combo_id : `custom_${state.situation}_${state.customer}_${state.photo}`;
+      onComplete({ combo_id, axes: { ...state }, special_context });
     };
     step.appendChild(btn);
 

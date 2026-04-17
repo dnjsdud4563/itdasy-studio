@@ -92,31 +92,31 @@ const PP_CSS = `
 @keyframes pp-bg-in { from{opacity:0} to{opacity:1} }
 .pp-sheet {
   width:100%; max-width:480px; background:#fff; border-radius:24px 24px 0 0;
-  padding:28px 22px 36px; box-sizing:border-box;
-  max-height:88vh; overflow-y:auto;
+  padding:32px 24px 40px; box-sizing:border-box;
+  max-height:92vh; overflow-y:auto;
   animation: pp-sheet-in .22s cubic-bezier(.32,1.1,.68,1);
 }
 @keyframes pp-sheet-in { from{transform:translateY(60px);opacity:0} to{transform:none;opacity:1} }
 .pp-handle { width:36px; height:4px; background:#e0e0e0; border-radius:2px; margin:0 auto 22px; }
-.pp-title { font-size:18px; font-weight:800; color:#1a1a1a; margin-bottom:6px; line-height:1.35; }
-.pp-sub   { font-size:13px; color:#888; margin-bottom:22px; line-height:1.5; }
+.pp-title { font-size:20px; font-weight:800; color:#1a1a1a; margin-bottom:6px; line-height:1.35; }
+.pp-sub   { font-size:14px; color:#888; margin-bottom:22px; line-height:1.5; }
 .pp-btn {
-  width:100%; padding:14px; border-radius:14px; border:none;
-  font-size:15px; font-weight:700; cursor:pointer; transition:opacity .1s;
+  width:100%; padding:16px; border-radius:14px; border:none;
+  font-size:16px; font-weight:700; cursor:pointer; transition:opacity .1s;
 }
 .pp-btn:active { opacity:.75; }
 .pp-btn-primary { background:#1a1a1a; color:#fff; }
 .pp-btn-ghost   { background:#f4f4f4; color:#333; margin-top:10px; }
 .pp-caption-card {
-  border:1.5px solid #e5e5e5; border-radius:14px; padding:14px 16px;
-  margin-bottom:12px; font-size:13px; color:#222; line-height:1.65;
+  border:1.5px solid #e5e5e5; border-radius:14px; padding:16px 18px;
+  margin-bottom:12px; font-size:14px; color:#222; line-height:1.65;
   white-space:pre-wrap; cursor:pointer; transition:border-color .12s;
 }
 .pp-caption-card.selected { border-color:#1a1a1a; background:#fafafa; }
 .pp-caption-card:hover { border-color:#bbb; }
 .pp-caption-actions { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
 .pp-act-btn {
-  flex:1; min-width:90px; padding:11px 6px; border-radius:12px; border:1.5px solid #e5e5e5;
+  flex:1; min-width:90px; padding:13px 8px; border-radius:12px; border:1.5px solid #e5e5e5;
   background:#fff; font-size:13px; font-weight:600; cursor:pointer; text-align:center;
   transition:border-color .12s, background .12s;
 }
@@ -124,7 +124,7 @@ const PP_CSS = `
 .pp-act-btn.primary { border-color:#1a1a1a; background:#1a1a1a; color:#fff; }
 .pp-tone-row { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
 .pp-tone-chip {
-  flex:1; min-width:70px; padding:11px 8px; border-radius:12px; border:1.5px solid #e5e5e5;
+  flex:1; min-width:70px; padding:13px 10px; border-radius:12px; border:1.5px solid #e5e5e5;
   background:#fff; font-size:13px; font-weight:600; cursor:pointer; text-align:center;
   transition:border-color .12s, background .12s, color .12s;
 }
@@ -366,16 +366,6 @@ function _renderStep5(signature, combo_id, axes, special_context) {
     } catch(e) {
       console.warn('[persona-popup] API 실패, Mock 사용', e);
       captions = mockGenerateCaption(axes, special_context);
-    }
-
-    // 서명 블록 붙이기 (signature: { top, bottom })
-    if (signature) {
-      captions = captions.map(cap => {
-        let result = cap;
-        if (signature.top) result = signature.top + '\n\n' + result;
-        if (signature.bottom) result = result + '\n\n' + signature.bottom;
-        return result;
-      });
     }
 
     wrap.innerHTML = '';
