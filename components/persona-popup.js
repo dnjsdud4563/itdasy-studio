@@ -91,6 +91,15 @@ const PP_CSS = `
   font-size:13px; color:#555; line-height:1.6; margin-bottom:16px;
   white-space:pre-wrap; min-height:40px;
 }
+.pp-sig-group { margin-bottom:16px; }
+.pp-sig-label { display:block; font-size:13px; font-weight:600; color:#555; margin-bottom:6px; }
+.pp-sig-textarea {
+  width:100%; min-height:60px; padding:12px; border:1.5px solid #e5e5e5; border-radius:12px;
+  font-size:14px; line-height:1.5; resize:vertical; box-sizing:border-box;
+  font-family:inherit;
+}
+.pp-sig-textarea:focus { outline:none; border-color:#1a1a1a; }
+.pp-sig-textarea::placeholder { color:#bbb; }
 .pp-loading { text-align:center; padding:32px 0; color:#aaa; font-size:14px; }
 .pp-step-anim { animation: ss-fadein .18s ease; }
 @keyframes ss-fadein { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
@@ -112,6 +121,14 @@ let _overlay = null;
 
 function _close() {
   if (_overlay) { _overlay.remove(); _overlay = null; }
+}
+
+function _showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:9999;animation:ss-fadein .2s ease;white-space:nowrap;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
 }
 
 function _buildOverlay() {
@@ -138,31 +155,120 @@ function _getSheet() { return document.getElementById('pp-sheet'); }
    Step 렌더러
    ───────────────────────────────────────────── */
 
-// Step 0: 서명블록 확인
-function _renderStep0() {
+// Step 0: 서명블록 확인 (실제 API 연동)
+async function _renderStep0() {
   const sheet = _getSheet();
   sheet.querySelectorAll('.pp-step').forEach(el => el.remove());
 
   const wrap = document.createElement('div');
   wrap.className = 'pp-step pp-step-anim';
 
-  // 실제로는 서버에서 서명 가져오지만, Mock에선 localStorage 활용
-  const savedSig = localStorage.getItem('_mock_signature') || '';
-
-  wrap.innerHTML = `
-    <div class="pp-title">고정으로 들어가는 글이 있어요?</div>
-    <div class="pp-sub">캡션 마지막에 항상 붙이는 말이 있으면 알려주세요.<br>없으면 그냥 넘어가도 돼요.</div>
-    <div class="pp-signature-box" id="pp-sig-preview">${savedSig || '예: 예약은 DM 주세요 💌\n#잇데이네일'}</div>
-    <button class="pp-btn pp-btn-primary" id="pp-sig-ok">이렇게 쓸게요</button>
-    <button class="pp-btn pp-btn-ghost" id="pp-sig-no">없어요, 넘어갈게요</button>
-  `;
+  // 로딩 표시
+  wrap.innerHTML = `<div class="pp-loading">서명 불러오는 중...</div>`;
   sheet.appendChild(wrap);
 
-  document.getElementById('pp-sig-ok').onclick = () => _renderStep1to3(savedSig);
-  document.getElementById('pp-sig-no').onclick = () => _renderStep1to3('');
+  // API에서 서명블록 가져오기
+  let blocks = [];
+  try {
+    const res = await fetch(window.API + '/persona/signature', {
+      headers: window.authHeader()
+    });
+    if (res.ok) blocks = await res.json();
+  } catch (e) {
+    console.warn('[persona-popup] 서명 조회 실패', e);
+  }
+
+  // position별로 분리
+  const topBlock = blocks.find(b => b.position === 'top');
+  const bottomBlock = blocks.find(b => b.position === 'bottom');
+
+  // UI 렌더링
+  wrap.innerHTML = `
+    <div class="pp-title">캡션에 항상 넣는 말이 있나요?</div>
+    <div class="pp-sub">분석에서 찾은 고정 문구예요. 수정해도 돼요.</div>
+
+    <div class="pp-sig-group">
+      <label class="pp-sig-label">글 앞에 고정 문구 (선택)</label>
+      <textarea class="pp-sig-textarea" id="pp-sig-top" placeholder="예: 🌸 오늘의 시술 🌸">${topBlock?.content || ''}</textarea>
+    </div>
+
+    <div class="pp-sig-group">
+      <label class="pp-sig-label">글 뒤에 고정 문구 (선택)</label>
+      <textarea class="pp-sig-textarea" id="pp-sig-bottom" placeholder="예: 예약은 DM 주세요 💌 #잇데이네일">${bottomBlock?.content || ''}</textarea>
+    </div>
+
+    <button class="pp-btn pp-btn-primary" id="pp-sig-next">다음</button>
+  `;
+
+  // 원본값 저장 (변경 감지용)
+  const origTop = topBlock?.content || '';
+  const origBottom = bottomBlock?.content || '';
+  const topId = topBlock?.id || null;
+  const bottomId = bottomBlock?.id || null;
+
+  document.getElementById('pp-sig-next').onclick = async () => {
+    const newTop = document.getElementById('pp-sig-top').value.trim();
+    const newBottom = document.getElementById('pp-sig-bottom').value.trim();
+
+    // 변경사항 저장 (에러 무시, 콘솔 warn만)
+    try {
+      // Top 블록 처리
+      if (newTop !== origTop) {
+        if (newTop && topId) {
+          // 업데이트
+          await fetch(window.API + '/persona/signature/' + topId, {
+            method: 'PUT',
+            headers: { ...window.authHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newTop, position: 'top' })
+          });
+        } else if (newTop && !topId) {
+          // 새로 생성
+          await fetch(window.API + '/persona/signature', {
+            method: 'POST',
+            headers: { ...window.authHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newTop, position: 'top', label: '글 앞 고정', is_default: true, source: 'manual' })
+          });
+        } else if (!newTop && topId) {
+          // 삭제 (soft delete)
+          await fetch(window.API + '/persona/signature/' + topId, {
+            method: 'DELETE',
+            headers: window.authHeader()
+          });
+        }
+      }
+
+      // Bottom 블록 처리
+      if (newBottom !== origBottom) {
+        if (newBottom && bottomId) {
+          await fetch(window.API + '/persona/signature/' + bottomId, {
+            method: 'PUT',
+            headers: { ...window.authHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newBottom, position: 'bottom' })
+          });
+        } else if (newBottom && !bottomId) {
+          await fetch(window.API + '/persona/signature', {
+            method: 'POST',
+            headers: { ...window.authHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newBottom, position: 'bottom', label: '글 뒤 고정', is_default: true, source: 'manual' })
+          });
+        } else if (!newBottom && bottomId) {
+          await fetch(window.API + '/persona/signature/' + bottomId, {
+            method: 'DELETE',
+            headers: window.authHeader()
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[persona-popup] 서명 저장 실패 (계속 진행)', e);
+    }
+
+    // 다음 단계로 이동 (signature 객체 전달)
+    _renderStep1to3({ top: newTop, bottom: newBottom });
+  };
 }
 
 // Step 1~3 + Step 4 (scenario-selector 위임)
+// signature: { top: string, bottom: string }
 function _renderStep1to3(signature) {
   const sheet = _getSheet();
   sheet.querySelectorAll('.pp-step').forEach(el => el.remove());
@@ -219,7 +325,15 @@ function _renderStep5(signature, combo_id, axes, special_context) {
       captions = mockGenerateCaption(axes, special_context);
     }
 
-    if (signature) captions.forEach((_, i) => { captions[i] += '\n\n' + signature; });
+    // 서명 블록 붙이기 (signature: { top, bottom })
+    if (signature) {
+      captions = captions.map(cap => {
+        let result = cap;
+        if (signature.top) result = signature.top + '\n\n' + result;
+        if (signature.bottom) result = result + '\n\n' + signature.bottom;
+        return result;
+      });
+    }
 
     wrap.innerHTML = '';
 
@@ -358,13 +472,20 @@ function _renderStep6(selectedCaption, selectedIdx, combo_id, captions, axes, sp
   btnDone.className = 'pp-btn pp-btn-primary';
   btnDone.style.marginTop = '16px';
   btnDone.textContent = '완료!';
-  btnDone.onclick = () => { _sendFeedback(); _close(); };
+  btnDone.onclick = () => {
+    _sendFeedback();
+    _showToast(editMode ? '수정사항 저장 완료!' : '말투 학습 완료! 다음 캡션에 반영돼요 ✨');
+    _close();
+  };
   wrap.appendChild(btnDone);
 
   const btnSkip = document.createElement('button');
   btnSkip.className = 'pp-btn pp-btn-ghost';
   btnSkip.textContent = '이대로 완료';
-  btnSkip.onclick = () => _close();
+  btnSkip.onclick = () => {
+    _showToast('말투 학습 완료! 다음 캡션에 반영돼요 ✨');
+    _close();
+  };
   wrap.appendChild(btnSkip);
 
   sheet.appendChild(wrap);
